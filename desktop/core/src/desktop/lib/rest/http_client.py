@@ -23,7 +23,7 @@ from django.utils.encoding import iri_to_uri, smart_str
 
 from requests import exceptions
 from requests.auth import HTTPBasicAuth
-from requests_kerberos import HTTPKerberosAuth, OPTIONAL
+from requests_kerberos import HTTPKerberosAuth, OPTIONAL, DISABLED
 
 __docformat__ = "epytext"
 
@@ -85,7 +85,7 @@ class HttpClient(object):
 
   def set_kerberos_auth(self):
     """Set up kerberos auth for the client, based on the current ticket."""
-    self._session.auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+    self._session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED)
     return self
 
   def set_basic_auth(self, username, password):
