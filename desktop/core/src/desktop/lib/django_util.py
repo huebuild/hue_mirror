@@ -25,16 +25,16 @@ import datetime
 
 from django.conf import settings
 from django.core import urlresolvers, serializers
-from django.core.context_processors import csrf
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.http import QueryDict, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response as django_render_to_response
 from django.template import RequestContext
+from django.template.context_processors import csrf
 from django.template.loader import render_to_string as django_render_to_string
 from django.utils.http import urlencode # this version is unicode-friendly
 from django.utils.translation import ungettext, ugettext
-from django.utils.tzinfo import LocalTimezone
+from django.utils.timezone import FixedOffset
 
 import desktop.conf
 import desktop.lib.thrift_util
@@ -421,7 +421,7 @@ def timesince(d=None, now=None, abbreviate=False, separator=','):
 
   if not now:
     if d.tzinfo:
-      now = datetime.datetime.now(LocalTimezone(d))
+      now = datetime.datetime.now(FixedOffset(d))
     else:
       now = datetime.datetime.now()
 

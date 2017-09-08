@@ -131,7 +131,7 @@ def url(view_name, *args, **view_args):
   return reverse(view_name, args=args, kwargs=view_args)
 
 
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 
 def csrf_token(request):
   """

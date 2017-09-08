@@ -190,7 +190,8 @@ INSTALLED_APPS = [
     'django_extensions',
 
     # 'debug_toolbar',
-    'south', # database migration tool
+    # TODO Prakash remove south?
+    #'south', # database migration tool
 
     # i18n support
     'babeldjango',
@@ -500,8 +501,8 @@ if desktop.conf.MEMORY_PROFILER.get():
 
 if not desktop.conf.DATABASE_LOGGING.get():
   def disable_database_logging():
-    from django.db.backends import BaseDatabaseWrapper
-    from django.db.backends.util import CursorWrapper
+    from django.db.backends.base.base import BaseDatabaseWrapper
+    from django.db.backends.utils import CursorWrapper
 
     BaseDatabaseWrapper.make_debug_cursor = lambda self, cursor: CursorWrapper(cursor, self)
 

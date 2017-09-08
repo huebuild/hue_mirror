@@ -23,46 +23,37 @@ import traceback
 
 LOG = logging.getLogger(__name__)
 
-def _deprecation_check(arg0):
-  """HUE-71. Deprecate build/env/bin/desktop"""
-  if os.path.basename(arg0) == 'desktop':
-    to_use = os.path.join(os.path.dirname(arg0), 'hue')
-    msg = "Warning: '%s' has been deprecated. Please use '%s' instead." % (arg0, to_use)
-    print >> sys.stderr, msg
-    LOG.warn(msg)
-
 def entry():
-  _deprecation_check(sys.argv[0])
-
   from django.core.exceptions import ImproperlyConfigured
-  from django.core.management import execute_from_command_line, find_commands, find_management_module
-  from django.core.management import LaxOptionParser
-  from django.core.management.base import BaseCommand
+  from django.core.management import execute_from_command_line
+  from django.core.management.base import BaseCommand, CommandError
 
   os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'desktop.settings')
+  execute_from_command_line(sys.argv)
 
-  # What's the subcommand being run?
-  # This code uses the same logic from django.core.management to handle command args
-  argv = sys.argv[:]
-  parser = LaxOptionParser(option_list=BaseCommand.option_list)
-  parser.parse_args(argv)
-  if len(argv) > 1:
-    prof_id = subcommand = argv[1]
-  else:
-    prof_id = str(os.getpid())
-
-  try:
-    # Let django handle the normal execution
-    if os.getenv("DESKTOP_PROFILE"):
-      _profile(prof_id, lambda: execute_from_command_line(sys.argv))
-    else:
-      execute_from_command_line(sys.argv)
-  except ImproperlyConfigured, e:
-    if len(sys.argv) > 1 and sys.argv[1] == 'is_db_alive' and 'oracle' in str(e).lower():
-      print >> sys.stderr, e # Oracle connector is improperly configured
-      sys.exit(10)
-    else:
-      raise e
+  ### TODO Prakash figure out what is this?
+  # # What's the subcommand being run?
+  # # This code uses the same logic from django.core.management to handle command args
+  # argv = sys.argv[:]
+  # parser = LaxOptionParser(option_list=BaseCommand.option_list)
+  # parser.parse_args(argv)
+  # if len(argv) > 1:
+  #   prof_id = subcommand = argv[1]
+  # else:
+  #   prof_id = str(os.getpid())
+  #
+  # try:
+  #   # Let django handle the normal execution
+  #   if os.getenv("DESKTOP_PROFILE"):
+  #     _profile(prof_id, lambda: execute_from_command_line(sys.argv))
+  #   else:
+  #     execute_from_command_line(sys.argv)
+  # except ImproperlyConfigured, e:
+  #   if len(sys.argv) > 1 and sys.argv[1] == 'is_db_alive' and 'oracle' in str(e).lower():
+  #     print >> sys.stderr, e # Oracle connector is improperly configured
+  #     sys.exit(10)
+  #   else:
+  #     raise e
 
 def _profile(prof_id, func):
   """
