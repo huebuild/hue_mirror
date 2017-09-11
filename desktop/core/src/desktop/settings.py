@@ -210,10 +210,10 @@ LOCALE_PATHS = [
 # Keep default values up to date
 TEMPLATE_CONTEXT_PROCESSORS = (
   'django.contrib.auth.context_processors.auth',
-  'django.core.context_processors.debug',
-  'django.core.context_processors.i18n',
-  'django.core.context_processors.media',
-  'django.core.context_processors.request',
+  'django.template.context_processors.debug',
+  'django.template.context_processors.i18n',
+  'django.template.context_processors.media',
+  'django.template.context_processors.request',
   'django.contrib.messages.context_processors.messages',
    # Not default
   'desktop.context_processors.app_name',

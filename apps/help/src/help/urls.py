@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import url, patterns
+from django.conf.urls import url
+from help import views
 
-urlpatterns = patterns('',
-  url(r'^$', 'help.views.view', { "app": "desktop", "path": "/index.html" }),
-  url(r'^(?P<app>\w*)(?P<path>/.*)$', 'help.views.view', name='help.view'),
-)
+urlpatterns = [
+  url(r'^$', views.view, { "app": "desktop", "path": "/index.html" }),
+  url(r'^(?P<app>\w*)(?P<path>/.*)$', views.view, name='help.view'),
+]

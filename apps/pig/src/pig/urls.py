@@ -15,21 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+from pig import views
 
-urlpatterns = patterns('pig.views',
-  url(r'^$', 'app', name='index'),
+urlpatterns = [
+  url(r'^$', views.app, name='index'),
 
-  url(r'^app/$', 'app', name='app'),
+  url(r'^app/$', views.app, name='app'),
 
   # Ajax
-  url(r'^scripts/$', 'scripts', name='scripts'),
-  url(r'^dashboard/$', 'dashboard', name='dashboard'),
-  url(r'^save/$', 'save', name='save'),
-  url(r'^run/$', 'run', name='run'),
-  url(r'^copy/$', 'copy', name='copy'),
-  url(r'^delete/$', 'delete', name='delete'),
-  url(r'^watch/(?P<job_id>[-\w]+)$', 'watch', name='watch'),
-  url(r'^stop/$', 'stop', name='stop'),
-  url(r'^install_examples$', 'install_examples', name='install_examples'),
-)
+  url(r'^scripts/$', views.scripts, name='scripts'),
+  url(r'^dashboard/$', views.dashboard, name='dashboard'),
+  url(r'^save/$', views.save, name='save'),
+  url(r'^run/$', views.run, name='run'),
+  url(r'^copy/$', views.copy, name='copy'),
+  url(r'^delete/$', views.delete, name='delete'),
+  url(r'^watch/(?P<job_id>[-\w]+)$', views.watch, name='watch'),
+  url(r'^stop/$', views.stop, name='stop'),
+  url(r'^install_examples$', views.install_examples, name='install_examples'),
+]

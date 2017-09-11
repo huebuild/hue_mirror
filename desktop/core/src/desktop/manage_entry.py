@@ -24,36 +24,45 @@ import traceback
 LOG = logging.getLogger(__name__)
 
 def entry():
-  from django.core.exceptions import ImproperlyConfigured
-  from django.core.management import execute_from_command_line
-  from django.core.management.base import BaseCommand, CommandError
-
   os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'desktop.settings')
-  execute_from_command_line(sys.argv)
 
-  ### TODO Prakash figure out what is this?
-  # # What's the subcommand being run?
-  # # This code uses the same logic from django.core.management to handle command args
-  # argv = sys.argv[:]
-  # parser = LaxOptionParser(option_list=BaseCommand.option_list)
-  # parser.parse_args(argv)
-  # if len(argv) > 1:
-  #   prof_id = subcommand = argv[1]
-  # else:
-  #   prof_id = str(os.getpid())
-  #
-  # try:
-  #   # Let django handle the normal execution
-  #   if os.getenv("DESKTOP_PROFILE"):
-  #     _profile(prof_id, lambda: execute_from_command_line(sys.argv))
-  #   else:
-  #     execute_from_command_line(sys.argv)
-  # except ImproperlyConfigured, e:
-  #   if len(sys.argv) > 1 and sys.argv[1] == 'is_db_alive' and 'oracle' in str(e).lower():
-  #     print >> sys.stderr, e # Oracle connector is improperly configured
-  #     sys.exit(10)
-  #   else:
-  #     raise e
+  if len(sys.argv[:]) > 1:
+    prof_id = subcommand = sys.argv[1]
+  else:
+    prof_id = str(os.getpid())
+
+  django_installed = False
+  try:
+    from django.core.exceptions import ImproperlyConfigured
+    from django.core.management import execute_from_command_line
+    django_installed = True
+  except ImportError:
+    # The above import may fail for some other reason. Ensure that the
+    # issue is really that Django is missing to avoid masking other
+    # exceptions on Python 2.
+    try:
+      import django
+      django_installed = True
+    except ImportError:
+      raise ImportError(
+        "Couldn't import Django. Are you sure it's installed and "
+        "available on your PYTHONPATH environment variable? Did you "
+        "forget to activate a virtual environment?"
+      )
+    raise
+
+  if django_installed:
+    try:
+      if os.getenv("DESKTOP_PROFILE"):
+        _profile(prof_id, lambda: execute_from_command_line(sys.argv))
+      else:
+        execute_from_command_line(sys.argv)
+    except ImproperlyConfigured, e:
+      if len(sys.argv) > 1 and sys.argv[1] == 'is_db_alive' and 'oracle' in str(e).lower():
+        print >> sys.stderr, e # Oracle connector is improperly configured
+        sys.exit(10)
+      else:
+        raise e
 
 def _profile(prof_id, func):
   """

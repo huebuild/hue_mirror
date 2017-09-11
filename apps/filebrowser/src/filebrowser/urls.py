@@ -15,45 +15,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import url, patterns
+from django.conf.urls import url
+from filebrowser import views
+from filebrowser import api
 
-
-urlpatterns = patterns('filebrowser.views',
+urlpatterns = [
   # Base view
-  url(r'^$', 'index', name='index'),
+  url(r'^$', views.index, name='index'),
 
   # Catch-all for viewing a file (display) or a directory (listdir)
-  url(r'^view=(?P<path>.*)$', 'view', name='view'),
+  url(r'^view=(?P<path>.*)$', views.view, name='view'),
 
-  url(r'^listdir=(?P<path>.*)$', 'listdir', name='listdir'),
-  url(r'^display=(?P<path>.*)$', 'display', name='display'),
-  url(r'^stat=(?P<path>.*)$', 'stat', name='stat'),
-  url(r'^content_summary=(?P<path>.*)$', 'content_summary', name='content_summary'),
-  url(r'^download=(?P<path>.*)$', 'download', name='download'),
-  url(r'^status$', 'status', name='status'),
-  url(r'^home_relative_view=(?P<path>.*)$', 'home_relative_view', name='home_relative_view'),
-  url(r'^edit=(?P<path>.*)$', 'edit', name='edit'),
+  url(r'^listdir=(?P<path>.*)$', views.listdir, name='listdir'),
+  url(r'^display=(?P<path>.*)$', views.display, name='display'),
+  url(r'^stat=(?P<path>.*)$', views.stat, name='stat'),
+  url(r'^content_summary=(?P<path>.*)$', views.content_summary, name='content_summary'),
+  url(r'^download=(?P<path>.*)$', views.download, name='download'),
+  url(r'^status$', views.status, name='status'),
+  url(r'^home_relative_view=(?P<path>.*)$', views.home_relative_view, name='home_relative_view'),
+  url(r'^edit=(?P<path>.*)$', views.edit, name='edit'),
 
   # POST operations
-  url(r'^save$', 'save_file'),
-  url(r'^upload/file$', 'upload_file', name='upload_file'),
-  url(r'^upload/archive$', 'upload_archive', name='upload_archive'),
-  url(r'^extract_archive', 'extract_archive_using_batch_job', name='extract_archive_using_batch_job'),
-  url(r'^compress_files', 'compress_files_using_batch_job', name='compress_files_using_batch_job'),
-  url(r'^trash/restore$', 'trash_restore', name='trash_restore'),
-  url(r'^trash/purge$', 'trash_purge', name='trash_purge'),
-  url(r'^rename$', 'rename', name='rename'),
-  url(r'^mkdir$', 'mkdir', name='mkdir'),
-  url(r'^touch$', 'touch', name='touch'),
-  url(r'^move$', 'move', name='move'),
-  url(r'^copy$', 'copy', name='copy'),
-  url(r'^set_replication$', 'set_replication', name='set_replication'),
-  url(r'^rmtree$', 'rmtree', name='rmtree'),
-  url(r'^chmod$', 'chmod', name='chmod'),
-  url(r'^chown$', 'chown', name='chown'),
-)
+  url(r'^save$', views.save_file),
+  url(r'^upload/file$', views.upload_file, name='upload_file'),
+  url(r'^upload/archive$', views.upload_archive, name='upload_archive'),
+  url(r'^extract_archive', views.extract_archive_using_batch_job, name='extract_archive_using_batch_job'),
+  url(r'^compress_files', views.compress_files_using_batch_job, name='compress_files_using_batch_job'),
+  url(r'^trash/restore$', views.trash_restore, name='trash_restore'),
+  url(r'^trash/purge$', views.trash_purge, name='trash_purge'),
+  url(r'^rename$', views.rename, name='rename'),
+  url(r'^mkdir$', views.mkdir, name='mkdir'),
+  url(r'^touch$', views.touch, name='touch'),
+  url(r'^move$', views.move, name='move'),
+  url(r'^copy$', views.copy, name='copy'),
+  url(r'^set_replication$', views.set_replication, name='set_replication'),
+  url(r'^rmtree$', views.rmtree, name='rmtree'),
+  url(r'^chmod$', views.chmod, name='chmod'),
+  url(r'^chown$', views.chown, name='chown'),
+]
 
 # API
-urlpatterns += patterns('filebrowser.api',
-  url(r'^api/get_filesystems/?', 'get_filesystems', name='get_filesystems'),
-)
+urlpatterns += [
+  url(r'^api/get_filesystems/?', api.get_filesystems, name='get_filesystems'),
+]

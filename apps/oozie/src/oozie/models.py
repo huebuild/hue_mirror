@@ -32,7 +32,7 @@ from django.db.models import Q
 from django.core.urlresolvers import reverse
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.forms.models import inlineformset_factory
 from django.utils.encoding import force_unicode, smart_str
@@ -125,7 +125,7 @@ class Job(models.Model):
                                 help_text=_t('Parameters used at the submission time (e.g. market=US, oozie.use.system.libpath=true).'))
   is_trashed = models.BooleanField(default=False, db_index=True, verbose_name=_t('Is trashed'), blank=True, # Deprecated
                                    help_text=_t('If this job is trashed.'))
-  doc = generic.GenericRelation(Document, related_name='oozie_doc')
+  doc = GenericRelation(Document, related_name='oozie_doc')
   data = models.TextField(blank=True, default=json.dumps({}))  # e.g. data=json.dumps({'sla': [python data], ...})
 
   objects = JobManager()
