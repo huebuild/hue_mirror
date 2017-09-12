@@ -31,7 +31,7 @@ from django.conf import settings
 from django.shortcuts import render_to_response
 from django.http import HttpResponse
 from django.core.urlresolvers import reverse
-from django.core.servers.basehttp import FileWrapper
+#from django.core.servers.basehttp import FileWrapper
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_http_methods, require_POST
@@ -57,6 +57,7 @@ from desktop.log.access import access_log_level, access_warn
 from desktop.log import set_all_debug as _set_all_debug, reset_all_debug as _reset_all_debug, get_all_debug as _get_all_debug
 from desktop.models import Settings, hue_version, _get_apps, UserPreferences, Cluster
 
+from wsgiref.util import FileWrapper
 
 LOG = logging.getLogger(__name__)
 

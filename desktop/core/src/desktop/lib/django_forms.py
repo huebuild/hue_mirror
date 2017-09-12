@@ -23,12 +23,12 @@ import urllib
 
 from django.forms import Widget, Field
 from django import forms
-from django.forms.util import ErrorList, ValidationError, flatatt
+from django.forms.utils import ErrorList, ValidationError, flatatt
 from django.forms.fields import MultiValueField, CharField, ChoiceField, BooleanField
 from django.forms.widgets import MultiWidget, Select, TextInput, Textarea, HiddenInput, Input
 from django.utils import formats
 from django.utils.safestring import mark_safe
-from django.utils.encoding import StrAndUnicode, force_unicode
+from django.utils.encoding import python_2_unicode_compatible, force_unicode
 
 import desktop.lib.i18n
 from desktop.lib.i18n import smart_str
@@ -36,6 +36,10 @@ from desktop.lib.i18n import smart_str
 
 LOG = logging.getLogger(__name__)
 
+@python_2_unicode_compatible
+class StrAndUnicode(object):
+  def __str__(self):
+    return self.CodeType
 
 class SplitDateTimeWidget(forms.MultiWidget):
   """
