@@ -30,7 +30,7 @@ import tempfile
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 from nose.tools import assert_true, assert_false, assert_equal, assert_not_equal, assert_raises, nottest
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
@@ -418,9 +418,9 @@ def test_error_handling():
     raise PopupException(exc_msg, title="earráid", detail=exc_msg)
 
   # Add an error view
-  error_url_pat = patterns('',
+  error_url_pat = [
                            url('^500_internal_error$', error_raising_view),
-                           url('^popup_exception$', popup_exception_view))
+                           url('^popup_exception$', popup_exception_view)]
   desktop.urls.urlpatterns.extend(error_url_pat)
   try:
     def store_exc_info(*args, **kwargs):

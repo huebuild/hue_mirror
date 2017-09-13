@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+from libopenid import views
 
-urlpatterns = patterns(
-    'libopenid.views',
-        url(r'^login/$', 'login_begin', name='openid-login'),
-        url(r'^complete/$', 'login_complete', name='openid-complete')
-)
+urlpatterns = [
+        url(r'^login/$', views.login_begin, name='openid-login'),
+        url(r'^complete/$', views.login_complete, name='openid-complete')
+]

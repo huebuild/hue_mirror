@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+from liboauth import views 
 
-urlpatterns = patterns(
-    'liboauth.views',
-       url(r'^accounts/login/$', 'show_login_page', name='show_oauth_login'),
-       url(r'^social_login/oauth/?$', 'oauth_login', name='oauth_login'),
-       url(r'^social_login/oauth_authenticated/?$', 'oauth_authenticated', name='oauth_authenticated'),
-)
+urlpatterns = [
+       url(r'^accounts/login/$', views.show_login_page, name='show_oauth_login'),
+       url(r'^social_login/oauth/?$', views.oauth_login, name='oauth_login'),
+       url(r'^social_login/oauth_authenticated/?$', views.oauth_authenticated, name='oauth_authenticated'),
+]

@@ -36,13 +36,13 @@ import django.contrib.auth.backends
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import ValidationError
-from django.utils.importlib import import_module
 
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch
 
 import desktop.conf
 from desktop import metrics
+from importlib import import_module
 from liboauth.metrics import oauth_authentication_time
 
 from useradmin import ldap_access

@@ -15,66 +15,72 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+
+from indexer import views
+from indexer import solr_api
+from indexer import api3
+from indexer.indexers import rdbms
+from indexer import api
 
 from indexer.conf import ENABLE_NEW_INDEXER
 
 
-urlpatterns = patterns('indexer.views',
-  url(r'^install_examples$', 'install_examples', name='install_examples'),
+urlpatterns = [
+  url(r'^install_examples$', views.install_examples, name='install_examples'),
 
-  url(r'^importer/$', 'importer', name='importer'),
-  url(r'^importer/prefill/(?P<source_type>[^/]+)/(?P<target_type>[^/]+)/(?P<target_path>[^/]+)?$', 'importer_prefill', name='importer_prefill'),
-)
+  url(r'^importer/$', views.importer, name='importer'),
+  url(r'^importer/prefill/(?P<source_type>[^/]+)/(?P<target_type>[^/]+)/(?P<target_path>[^/]+)?$', views.importer_prefill, name='importer_prefill'),
+]
 
 if ENABLE_NEW_INDEXER.get():
-  urlpatterns += patterns('indexer.views',
-    url(r'^$', 'indexes', name='indexes'),
-    url(r'^indexes/$', 'indexes', name='indexes'),
-    url(r'^indexes/(?P<index>[^/]+)/?$', 'indexes', name='indexes'),
-    url(r'^collections$', 'collections', name='collections'), # Old page
-  )
+  urlpatterns += [
+    url(r'^$', views.indexes, name='indexes'),
+    url(r'^indexes/$', views.indexes, name='indexes'),
+    url(r'^indexes/(?P<index>[^/]+)/?$', views.indexes, name='indexes'),
+    url(r'^collections$', views.collections, name='collections'), # Old page
+  ]
 else:
-  urlpatterns += patterns('indexer.views',
-    url(r'^$', 'collections', name='collections'),
-    url(r'^indexes/$', 'indexes', name='indexes'),
-  )
+  urlpatterns += [
+    url(r'^$', views.collections, name='collections'),
+    url(r'^indexes/$', views.indexes, name='indexes'),
+  ]
 
-urlpatterns += patterns('indexer.solr_api',
+urlpatterns += [
   # V2
-  url(r'^api/aliases/create/$', 'create_alias', name='create_alias'),
-  url(r'^api/configs/list/$', 'list_configs', name='list_configs'),
-  url(r'^api/index/list/$', 'list_index', name='list_index'),
-  url(r'^api/indexes/list/$', 'list_indexes', name='list_indexes'),
-  url(r'^api/indexes/create/$', 'create_index', name='create_index'),
-  url(r'^api/indexes/sample/$', 'sample_index', name='sample_index'),
-  url(r'^api/indexes/delete/$', 'delete_indexes', name='delete_indexes'),
-)
+  url(r'^api/aliases/create/$', solr_api.create_alias, name='create_alias'),
+  url(r'^api/configs/list/$', solr_api.list_configs, name='list_configs'),
+  url(r'^api/index/list/$', solr_api.list_index, name='list_index'),
+  url(r'^api/indexes/list/$', solr_api.list_indexes, name='list_indexes'),
+  url(r'^api/indexes/create/$', solr_api.create_index, name='create_index'),
+  url(r'^api/indexes/sample/$', solr_api.sample_index, name='sample_index'),
+  url(r'^api/indexes/delete/$', solr_api.delete_indexes, name='delete_indexes'),
+]
 
-urlpatterns += patterns('indexer.api3',
+urlpatterns += [
   # Importer
-  url(r'^api/indexer/guess_format/$', 'guess_format', name='guess_format'),
-  url(r'^api/indexer/guess_field_types/$', 'guess_field_types', name='guess_field_types'),
+  url(r'^api/indexer/guess_format/$', api3.guess_format, name='guess_format'),
+  url(r'^api/indexer/guess_field_types/$', api3.guess_field_types, name='guess_field_types'),
 
-  url(r'^api/importer/submit', 'importer_submit', name='importer_submit')
-)
+  url(r'^api/importer/submit', api3.importer_submit, name='importer_submit')
+]
 
-urlpatterns += patterns('indexer.indexers.rdbms',
-  url(r'^api/indexer/indexers/get_db_component/$', 'get_db_component', name='get_db_component'),
-  url(r'^api/indexer/indexers/get_drivers/$', 'get_drivers', name='get_drivers'),
-  url(r'^api/indexer/indexers/jdbc_db_list/$', 'jdbc_db_list', name='jdbc_db_list')
-)
+urlpatterns += [
+  url(r'^api/indexer/indexers/get_db_component/$', rdbms.get_db_component, name='get_db_component'),
+  url(r'^api/indexer/indexers/get_drivers/$', rdbms.get_drivers, name='get_drivers'),
+  url(r'^api/indexer/indexers/jdbc_db_list/$', rdbms.jdbc_db_list, name='jdbc_db_list')
+]
 
 
 # Deprecated
-urlpatterns += patterns('indexer.api',
-  url(r'^api/fields/parse/$', 'parse_fields', name='api_parse_fields'),
-  url(r'^api/autocomplete/$', 'autocomplete', name='api_autocomplete'),
-  url(r'^api/collections/$', 'collections', name='api_collections'),
-  url(r'^api/collections/create/$', 'collections_create', name='api_collections_create'),
-  url(r'^api/collections/import/$', 'collections_import', name='api_collections_import'),
-  url(r'^api/collections/remove/$', 'collections_remove', name='api_collections_remove'),
-  url(r'^api/collections/(?P<collection>[^/]+)/fields/$', 'collections_fields', name='api_collections_fields'),
-  url(r'^api/collections/(?P<collection>[^/]+)/update/$', 'collections_update', name='api_collections_update'),
-  url(r'^api/collections/(?P<collection>[^/]+)/data/$', 'collections_data', name='api_collections_data'),
-)
+urlpatterns += [
+  url(r'^api/fields/parse/$', api.parse_fields, name='api_parse_fields'),
+  url(r'^api/autocomplete/$', api.autocomplete, name='api_autocomplete'),
+  url(r'^api/collections/$', api.collections, name='api_collections'),
+  url(r'^api/collections/create/$', api.collections_create, name='api_collections_create'),
+  url(r'^api/collections/import/$', api.collections_import, name='api_collections_import'),
+  url(r'^api/collections/remove/$', api.collections_remove, name='api_collections_remove'),
+  url(r'^api/collections/(?P<collection>[^/]+)/fields/$', api.collections_fields, name='api_collections_fields'),
+  url(r'^api/collections/(?P<collection>[^/]+)/update/$', api.collections_update, name='api_collections_update'),
+  url(r'^api/collections/(?P<collection>[^/]+)/data/$', api.collections_data, name='api_collections_data'),
+]
