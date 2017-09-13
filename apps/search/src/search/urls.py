@@ -23,7 +23,7 @@ from dashboard import api
 
 
 urlpatterns = [
-  url(r'^install_examples$', search_views.install_examples', name='install_examples'),
+  url(r'^install_examples$', search_views.install_examples, name='install_examples'),
 ]
 
 

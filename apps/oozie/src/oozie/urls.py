@@ -16,10 +16,11 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from oozie.views import editor
-from oozie.views import editor2
-from oozie.views import dashboard
-from oozie.views import common
+import oozie.views.api as api
+import oozie.views.editor as editor
+import oozie.views.editor2 as editor2
+import oozie.views.dashboard as dashboard
+import oozie.views.common as common
 
 
 IS_URL_NAMESPACED = True
@@ -106,12 +107,12 @@ urlpatterns += [
 ]
 
 urlpatterns += [
-  url(r'^workflows$', editor2.workflows, name='workflows'),
-  url(r'^workflows/(?P<workflow>\d+)$', editor2.workflow, name='workflow'),
-  url(r'^workflows/(?P<workflow>\d+)/save$', editor2.workflow_save, name='workflow_save'),
-  url(r'^workflows/(?P<workflow>\d+)/actions$', editor2.workflow_actions, name='workflow_actions'),
-  url(r'^workflows/(?P<workflow>\d+)/nodes/(?P<node_type>\w+)/validate$', editor2.workflow_validate_node, name='workflow_validate_node'),
-  url(r'^workflows/autocomplete_properties/$', editor2.autocomplete_properties, name='autocomplete_properties'),
+  url(r'^workflows$', api.workflows, name='workflows'),
+  url(r'^workflows/(?P<workflow>\d+)$', api.workflow, name='workflow'),
+  url(r'^workflows/(?P<workflow>\d+)/save$', api.workflow_save, name='workflow_save'),
+  url(r'^workflows/(?P<workflow>\d+)/actions$', api.workflow_actions, name='workflow_actions'),
+  url(r'^workflows/(?P<workflow>\d+)/nodes/(?P<node_type>\w+)/validate$', api.workflow_validate_node, name='workflow_validate_node'),
+  url(r'^workflows/autocomplete_properties/$', api.autocomplete_properties, name='autocomplete_properties'),
 ]
 
 
