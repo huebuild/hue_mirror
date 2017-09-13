@@ -207,6 +207,7 @@ if settings.OAUTH_AUTHENTICATION:
   static_patterns.append(url(r'^oauth/', include('liboauth.urls')))
 
 # Root each app at /appname if they have a "urls" module
+app_urls_patterns = []
 for app in appmanager.DESKTOP_MODULES:
   if app.urls:
     if app.is_url_namespaced:
@@ -214,16 +215,18 @@ for app in appmanager.DESKTOP_MODULES:
     else:
       namespace = {}
     if namespace or app in appmanager.DESKTOP_APPS:
-      dynamic_patterns.extend( ('^' + re.escape(app.name) + '/', include(app.urls, **namespace)) )
+      x = url('^' + re.escape(app.name) + '/', include(app.urls, **namespace))
+      app_urls_patterns.append(x)
       app.urls_imported = True
 
-static_patterns.append(
-    (r'^%s(?P<path>.*)$' % re.escape(settings.STATIC_URL.lstrip('/')),
-      'django.views.static.serve',
-      { 'document_root': settings.STATIC_ROOT })
-)
+#static_patterns.append(
+#    url(r'^%s(?P<path>.*)$' % re.escape(settings.STATIC_URL.lstrip('/')),
+#      'django.views.static.serve',
+#      { 'document_root': settings.STATIC_ROOT })
+#)
 
-urlpatterns = static_patterns + dynamic_patterns
+#urlpatterns = static_patterns + dynamic_patterns + app_urls_patterns
+urlpatterns = dynamic_patterns + app_urls_patterns
 
 for x in dynamic_patterns:
   logging.debug("Dynamic pattern: %s" % (x,))

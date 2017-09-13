@@ -53,6 +53,8 @@ from oozie.conf import REMOTE_SAMPLE_DIR
 from oozie.utils import utc_datetime_format
 from oozie.timezones import TIMEZONES
 
+import django.utils.timezone as djangotz
+
 
 LOG = logging.getLogger(__name__)
 
@@ -159,10 +161,10 @@ class Job(models.Model):
     return force_unicode(res)
 
   def get_full_node(self):
-    try:
-      return self.workflow
-    except Workflow.DoesNotExist:
-      pass
+    #try:
+    #  return self.workflow
+    #except Workflow.DoesNotExist:
+    #  pass
     try:
       return self.coordinator
     except Coordinator.DoesNotExist:
@@ -1391,9 +1393,9 @@ class Coordinator(Job):
                                     help_text=_t('The unit of the rate at which data is periodically created.')) # unused
   timezone = models.CharField(max_length=24, choices=TIMEZONES, default='America/Los_Angeles', verbose_name=_t('Timezone'),
                               help_text=_t('The timezone of the coordinator. Only used for managing the daylight saving time changes when combining several coordinators.'))
-  start = models.DateTimeField(default=datetime.today(), verbose_name=_t('Start'),
+  start = models.DateTimeField(default=djangotz.now().today(), verbose_name=_t('Start'),
                                help_text=_t('When to start the first workflow.'))
-  end = models.DateTimeField(default=datetime.today() + timedelta(days=3), verbose_name=_t('End'),
+  end = models.DateTimeField(default=djangotz.now().today() + timedelta(days=3), verbose_name=_t('End'),
                              help_text=_t('When to start the last workflow.'))
   workflow = models.ForeignKey(Workflow, null=True, verbose_name=_t('Workflow'),
                                help_text=_t('The workflow to schedule repeatedly.'))
@@ -1654,7 +1656,7 @@ class Dataset(models.Model):
                           help_text=_t('The name of the dataset.'))
   description = models.CharField(max_length=1024, blank=True, default='', verbose_name=_t('Description'),
                                  help_text=_t('A description of the dataset.'))
-  start = models.DateTimeField(default=datetime.today(), verbose_name=_t('Start'),
+  start = models.DateTimeField(default=djangotz.now().today(), verbose_name=_t('Start'),
                                help_text=_t(' The UTC datetime of the initial instance of the dataset. The initial instance also provides '
                                             'the baseline datetime to compute instances of the dataset using multiples of the frequency.'))
   frequency_number = models.SmallIntegerField(default=1, choices=FREQUENCY_NUMBERS, verbose_name=_t('Frequency number'),
@@ -1758,7 +1760,7 @@ class BundledCoordinator(models.Model):
 
 
 class Bundle(Job):
-  kick_off_time = models.DateTimeField(default=datetime.today(), verbose_name=_t('Start'),
+  kick_off_time = models.DateTimeField(default=djangotz.now().today(), verbose_name=_t('Start'),
                                        help_text=_t('When to start the first coordinators.'))
   coordinators = models.ManyToManyField(Coordinator, through='BundledCoordinator')
 

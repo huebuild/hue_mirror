@@ -91,7 +91,7 @@ class UserProfile(models.Model):
   # Enum for describing the creation method of a user.
   CreationMethod = Enum('HUE', 'EXTERNAL')
 
-  user = models.ForeignKey(auth_models.User, unique=True)
+  user = models.OneToOneField(auth_models.User)
   home_directory = models.CharField(editable=True, max_length=1024, null=True)
   creation_method = models.CharField(editable=True, null=False, max_length=64, default=str(CreationMethod.HUE))
   first_login = models.BooleanField(default=True, verbose_name=_t('First Login'),
