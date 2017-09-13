@@ -7,7 +7,7 @@ from __future__ import print_function
 import sys
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand, BaseCommand 
+from django.core.management.base import BaseCommand
 from django.core.management.color import no_style
 from django.utils.datastructures import SortedDict
 from django.core.management.commands import syncdb
@@ -23,7 +23,7 @@ from south.exceptions import NoMigrations
 def get_app_label(app):
     return '.'.join( app.__name__.split('.')[0:-1] )
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     option_list = syncdb.Command.option_list + ( 
         make_option('--migrate', action='store_true', dest='migrate', default=False,
             help='Tells South to also perform migrations after the sync. Default for during testing, and other internal calls.'),
