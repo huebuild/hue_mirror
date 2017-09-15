@@ -8,3 +8,4 @@ coverage==4.4.1
 nosetty==0.4
 werkzeug==0.12.2
 windmill==1.6
+pysaml2==4.4.0
