@@ -89,11 +89,13 @@ class UserProfile(models.Model):
   PROPERLY
   """
   # Enum for describing the creation method of a user.
-  CreationMethod = Enum('HUE', 'EXTERNAL')
+  class CreationMethod(Enum):
+    HUE = 1
+    EXTERNAL = 2
 
   user = models.OneToOneField(auth_models.User)
   home_directory = models.CharField(editable=True, max_length=1024, null=True)
-  creation_method = models.CharField(editable=True, null=False, max_length=64, default=str(CreationMethod.HUE))
+  creation_method = models.CharField(editable=True, null=False, max_length=64, default=str(CreationMethod.HUE.name))
   first_login = models.BooleanField(default=True, verbose_name=_t('First Login'),
                                    help_text=_t('If this is users first login.'))
   last_activity = models.DateTimeField(default=datetime.fromtimestamp(0), db_index=True)
