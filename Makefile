@@ -133,6 +133,8 @@ $(BLD_DIR_ENV)/stamp:
 		$(VIRTUALENV_OPTS) --system-site-packages $(BLD_DIR_ENV)
 	@touch $@
 	@echo "--- $(BLD_DIR_ENV) ready"
+	@echo "--- Installing development tool: $@"
+	$(BLD_DIR_BIN)/pip install -r $(TOOLS_DIR)/requirements.txt
 
 .PHONY: virtual-env
 
