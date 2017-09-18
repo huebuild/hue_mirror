@@ -21,6 +21,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import DatabaseError
+from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import ugettext as _
 
 from desktop.auth.views import dt_logout
@@ -35,7 +36,7 @@ import ldap_access
 LOG = logging.getLogger(__name__)
 
 
-class LdapSynchronizationMiddleware(object):
+class LdapSynchronizationMiddleware(MiddlewareMixin):
   """
   Synchronize against LDAP authority.
   """
@@ -64,7 +65,7 @@ class LdapSynchronizationMiddleware(object):
       request.session.modified = True
 
 
-class LastActivityMiddleware(object):
+class LastActivityMiddleware(MiddlewareMixin):
   """
   Middleware to track the last activity of a user and automatically log out the user after a specified period of inactivity
   """

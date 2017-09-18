@@ -38,9 +38,11 @@ import django.db
 from django.http import HttpResponseNotAllowed
 from django.core.urlresolvers import resolve
 from django.http import HttpResponseRedirect, HttpResponse
+from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import ugettext as _
 from django.utils.http import urlquote, is_safe_url
 import django.views.static
+
 
 import desktop.views
 import desktop.conf
@@ -69,18 +71,18 @@ DJANGO_VIEW_AUTH_WHITELIST = [
 ]
 
 
-class AjaxMiddleware(object):
+class AjaxMiddleware(MiddlewareMixin):
   """
   Middleware that augments request to set request.ajax
   for either is_ajax() (looks at HTTP headers) or ?format=json
   GET parameters.
   """
   def process_request(self, request):
-    request.ajax = request.is_ajax() or request.REQUEST.get("format", "") == "json"
+    request.ajax = request.is_ajax() or request.GET.get("format", "") == "json"
     return None
 
 
-class ExceptionMiddleware(object):
+class ExceptionMiddleware(MiddlewareMixin):
   """
   If exceptions know how to render themselves, use that.
   """
@@ -110,7 +112,7 @@ class ExceptionMiddleware(object):
     return None
 
 
-class ClusterMiddleware(object):
+class ClusterMiddleware(MiddlewareMixin):
   """
   Manages setting request.fs and request.jt
   """
@@ -136,7 +138,7 @@ class ClusterMiddleware(object):
       request.jt = None
 
 
-class NotificationMiddleware(object):
+class NotificationMiddleware(MiddlewareMixin):
   """
   Manages setting request.info and request.error
   """
@@ -163,7 +165,7 @@ class NotificationMiddleware(object):
     request.warn = warn
 
 
-class AppSpecificMiddleware(object):
+class AppSpecificMiddleware(MiddlewareMixin):
   @classmethod
   def augment_request_with_app(cls, request, view_func):
     """ Stuff the app into the request for use in later-stage middleware """
@@ -263,7 +265,7 @@ class AppSpecificMiddleware(object):
     return result
 
 
-class LoginAndPermissionMiddleware(object):
+class LoginAndPermissionMiddleware(MiddlewareMixin):
   """
   Middleware that forces all views (except those that opt out) through authentication.
   """
@@ -331,7 +333,7 @@ class LoginAndPermissionMiddleware(object):
       return HttpResponseRedirect("%s?%s=%s" % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, urlquote(request.get_full_path())))
 
 
-class JsonMessage(object):
+class JsonMessage(MiddlewareMixin):
   def __init__(self, **kwargs):
     self.kwargs = kwargs
 
@@ -339,7 +341,7 @@ class JsonMessage(object):
     return json.dumps(self.kwargs)
 
 
-class AuditLoggingMiddleware(object):
+class AuditLoggingMiddleware(MiddlewareMixin):
 
   def __init__(self):
     from desktop.conf import AUDIT_EVENT_LOG_DIR, SERVER_USER
@@ -408,7 +410,7 @@ except Exception, ex:
   _has_tidylib = False
 
 
-class HtmlValidationMiddleware(object):
+class HtmlValidationMiddleware(MiddlewareMixin):
   """
   If configured, validate output html for every response.
   """
@@ -504,7 +506,7 @@ class HtmlValidationMiddleware(object):
         200 <= response.status_code < 300
 
 
-class SpnegoMiddleware(object):
+class SpnegoMiddleware(MiddlewareMixin):
   """
   Based on the WSGI SPNEGO middlware class posted here:
   http://code.activestate.com/recipes/576992/
@@ -625,7 +627,7 @@ class HueRemoteUserMiddleware(RemoteUserMiddleware):
     self.header = desktop.conf.AUTH.REMOTE_USER_HEADER.get()
 
 
-class EnsureSafeMethodMiddleware(object):
+class EnsureSafeMethodMiddleware(MiddlewareMixin):
   """
   Middleware to white list configured HTTP request methods.
   """
@@ -634,7 +636,7 @@ class EnsureSafeMethodMiddleware(object):
       return HttpResponseNotAllowed(desktop.conf.HTTP_ALLOWED_METHODS.get())
 
 
-class EnsureSafeRedirectURLMiddleware(object):
+class EnsureSafeRedirectURLMiddleware(MiddlewareMixin):
   """
   Middleware to white list configured redirect URLs.
   """
@@ -659,7 +661,7 @@ class EnsureSafeRedirectURLMiddleware(object):
       return response
 
 
-class MetricsMiddleware(object):
+class MetricsMiddleware(MiddlewareMixin):
   """
   Middleware to track the number of active requests.
   """
@@ -678,7 +680,7 @@ class MetricsMiddleware(object):
     return response
 
 
-class ContentSecurityPolicyMiddleware(object):
+class ContentSecurityPolicyMiddleware(MiddlewareMixin):
   def __init__(self, get_response=None):
     self.secure_content_security_policy = desktop.conf.SECURE_CONTENT_SECURITY_POLICY.get()
     if not self.secure_content_security_policy:
@@ -692,7 +694,7 @@ class ContentSecurityPolicyMiddleware(object):
     return response
 
 
-class MimeTypeJSFileFixStreamingMiddleware(object):
+class MimeTypeJSFileFixStreamingMiddleware(MiddlewareMixin):
   """
   Middleware to detect and fix ".js" mimetype. SLES 11SP4 as example OS which detect js file
   as "text/x-js" and if strict X-Content-Type-Options=nosniff is set then browser fails to
