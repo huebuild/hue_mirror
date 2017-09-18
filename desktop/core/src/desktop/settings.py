@@ -161,7 +161,8 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.csrf.CsrfViewMiddleware',
 
     'django.middleware.http.ConditionalGetMiddleware',
-    'axes.middleware.FailedLoginMiddleware',
+    # @TODO@ Prakash has temporarily removed axes middleware
+    #'axes.middleware.FailedLoginMiddleware',
     'desktop.middleware.MimeTypeJSFileFixStreamingMiddleware',
 ]
 
