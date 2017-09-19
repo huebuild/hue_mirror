@@ -84,10 +84,10 @@ def get_backend_names():
   return get_backends and [backend.__class__.__name__ for backend in get_backends()]
 
 
+#@watch_login
 @login_notrequired
-@watch_login
 def dt_login(request, from_modal=False):
-  redirect_to = request.REQUEST.get('next', '/')
+  redirect_to = request.GET.get('next', '/')
   is_first_login_ever = first_login_ever()
   backend_names = get_backend_names()
   is_active_directory = 'LdapBackend' in backend_names and ( bool(LDAP.NT_DOMAIN.get()) or bool(LDAP.LDAP_SERVERS.get()) )

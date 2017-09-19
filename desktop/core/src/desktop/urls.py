@@ -42,7 +42,7 @@ from desktop import appmanager
 from desktop.conf import METRICS, USE_NEW_EDITOR
 
 from useradmin import views as useradmin_views
-from desktop.auth import views as auth_views
+import desktop.auth.views
 from desktop import api
 from desktop import api2
 from desktop import views
@@ -63,11 +63,11 @@ admin.autodiscover()
 
 # Some django-wide URLs
 dynamic_patterns = [
-  url(r'^accounts/login/$', auth_views.dt_login),
-  url(r'^accounts/logout/$', auth_views.dt_logout, {'next_page': '/'}),
-  url(r'^profile$', auth_views.profile),
-  url(r'^login/oauth/?$', auth_views.oauth_login),
-  url(r'^login/oauth_authenticated/?$', auth_views.oauth_authenticated),
+  url(r'^accounts/login/$', desktop.auth.views.dt_login, name="desktop.auth.views.dt_login"),
+  url(r'^accounts/logout/$', desktop.auth.views.dt_logout, {'next_page': '/'}),
+  url(r'^profile$', desktop.auth.views.profile),
+  url(r'^login/oauth/?$', desktop.auth.views.oauth_login),
+  url(r'^login/oauth_authenticated/?$', desktop.auth.views.oauth_authenticated),
 ]
 
 

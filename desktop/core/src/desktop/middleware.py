@@ -121,7 +121,7 @@ class ClusterMiddleware(MiddlewareMixin):
     Sets request.fs and request.jt on every request to point to the
     configured filesystem.
     """
-    request.fs_ref = request.REQUEST.get('fs', view_kwargs.get('fs', 'default'))
+    request.fs_ref = request.GET.get('fs', view_kwargs.get('fs', 'default'))
     if "fs" in view_kwargs:
       del view_kwargs["fs"]
 
