@@ -509,7 +509,7 @@ if desktop.conf.MEMORY_PROFILER.get():
 
 if not desktop.conf.DATABASE_LOGGING.get():
   def disable_database_logging():
-    from django.db.backends import BaseDatabaseWrapper
+    from django.db.backends.base.base import BaseDatabaseWrapper
     from django.db.backends.util import CursorWrapper
 
     BaseDatabaseWrapper.make_debug_cursor = lambda self, cursor: CursorWrapper(cursor, self)

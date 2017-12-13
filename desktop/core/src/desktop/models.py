@@ -1915,7 +1915,7 @@ class Cluster():
 def _get_apps(user, section=None):
   current_app = None
   other_apps = []
-  if user.is_authenticated():
+  if user and user.is_authenticated():
     apps = appmanager.get_apps(user)
     apps_list = appmanager.get_apps_dict(user)
     for app in apps:
