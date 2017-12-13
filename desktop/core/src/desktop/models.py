@@ -30,7 +30,7 @@ except ImportError:
 from itertools import chain
 
 from django.contrib.auth import models as auth_models
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -610,7 +610,7 @@ class Document(models.Model):
 
   content_type = models.ForeignKey(ContentType)
   object_id = models.PositiveIntegerField()
-  content_object = generic.GenericForeignKey('content_type', 'object_id')
+  content_object = GenericForeignKey('content_type', 'object_id')
 
   objects = DocumentManager()
 
@@ -1076,7 +1076,7 @@ class Document2(models.Model):
 
   parent_directory = models.ForeignKey('self', blank=True, null=True, related_name='children', on_delete=models.CASCADE)
 
-  doc = generic.GenericRelation(Document, related_query_name='doc_doc') # Compatibility with Hue 3
+  doc = GenericRelation(Document, related_query_name='doc_doc') # Compatibility with Hue 3
 
   objects = Document2Manager()
 
