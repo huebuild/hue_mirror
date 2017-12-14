@@ -209,15 +209,26 @@ LOCALE_PATHS = [
 # Keep default values up to date
 TEMPLATE_CONTEXT_PROCESSORS = (
   'django.contrib.auth.context_processors.auth',
-  'django.core.context_processors.debug',
-  'django.core.context_processors.i18n',
-  'django.core.context_processors.media',
-  'django.core.context_processors.request',
+  'django.template.context_processors.debug',
+  'django.template.context_processors.i18n',
+  'django.template.context_processors.media',
+  'django.template.context_processors.request',
   'django.contrib.messages.context_processors.messages',
    # Not default
   'desktop.context_processors.app_name',
 )
 
+TEMPLATES = [
+  {
+    'BACKEND': 'django.template.backends.mako.MakoTemplates',
+    'DIRS': TEMPLATE_DIRS,
+    'APP_DIRS': False,
+    'OPTIONS': {
+      'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+      'strict_undefined': True
+    },
+  },
+]
 
 # Desktop doesn't use an auth profile module, because
 # because it doesn't mesh very well with the notion

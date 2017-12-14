@@ -25,7 +25,7 @@ import datetime
 
 from django.conf import settings
 from django.core import urlresolvers, serializers
-from django.core.context_processors import csrf
+from django.template.context_processors import csrf
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.http import QueryDict, HttpResponse, HttpResponseRedirect
@@ -34,7 +34,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string as django_render_to_string
 from django.utils.http import urlencode # this version is unicode-friendly
 from django.utils.translation import ungettext, ugettext
-from django.utils.tzinfo import LocalTimezone
+from django.utils.timezone import LocalTimezone
 
 import desktop.conf
 import desktop.lib.thrift_util
@@ -222,9 +222,10 @@ def render(template, request, data, json=None, template_lib=None, force_template
     else:
       return render_json(data, request.GET.get("callback"), status=status)
   else:
+    x=RequestContext(request,data)
     return _render_to_response(template,
                                request,
-                               RequestContext(request=request, dict_=data),
+                               x,
                                template_lib=template_lib,
                                status=status,
                                **kwargs)
