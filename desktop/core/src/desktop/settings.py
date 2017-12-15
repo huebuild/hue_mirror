@@ -220,12 +220,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 TEMPLATES = [
   {
-    'BACKEND': 'django.template.backends.mako.MakoTemplates',
+    'BACKEND': 'djangomako.backends.MakoBackend',
     'DIRS': TEMPLATE_DIRS,
-    'APP_DIRS': False,
+    'NAME': 'mako',
     'OPTIONS': {
       'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
-      'strict_undefined': True
     },
   },
 ]
