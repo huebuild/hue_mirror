@@ -30,7 +30,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.http import QueryDict, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response as django_render_to_response
-from django.template import RequestContext
+from django.template.context import RequestContext
 from django.template.loader import render_to_string as django_render_to_string
 from django.utils.http import urlencode # this version is unicode-friendly
 from django.utils.translation import ungettext, ugettext
