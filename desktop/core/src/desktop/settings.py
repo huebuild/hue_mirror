@@ -53,7 +53,7 @@ ENV_DESKTOP_DEBUG = "DESKTOP_DEBUG"
 
 # Configure debug mode
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+GTEMPLATE_DEBUG = DEBUG
 
 # Start basic logging as soon as possible.
 if ENV_HUE_PROCESS_NAME not in os.environ:
@@ -131,7 +131,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'build', 'static')
 
 
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
+GTEMPLATE_LOADERS = (
   'django.template.loaders.filesystem.Loader',
   'django.template.loaders.app_directories.Loader'
 )
@@ -175,7 +175,7 @@ ROOT_URLCONF = 'desktop.urls'
 # Hue runs its own wsgi applications
 WSGI_APPLICATION = None
 
-TEMPLATE_DIRS = (
+GTEMPLATE_DIRS = (
     get_desktop_root("core/templates"),
 )
 
@@ -208,7 +208,7 @@ LOCALE_PATHS = [
 ]
 
 # Keep default values up to date
-TEMPLATE_CONTEXT_PROCESSORS = (
+GTEMPLATE_CONTEXT_PROCESSORS = (
   'django.contrib.auth.context_processors.auth',
   'django.template.context_processors.debug',
   'django.template.context_processors.i18n',
@@ -222,10 +222,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 TEMPLATES = [
   {
     'BACKEND': 'djangomako.backends.MakoBackend',
-    'DIRS': TEMPLATE_DIRS,
+    'DIRS': GTEMPLATE_DIRS,
     'NAME': 'mako',
     'OPTIONS': {
-      'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+      'context_processors': GTEMPLATE_CONTEXT_PROCESSORS,
+      'loaders': GTEMPLATE_LOADERS,
     },
   },
 ]
@@ -282,7 +283,7 @@ conf.initialize(_app_conf_modules, _config_dir)
 
 # Now that we've loaded the desktop conf, set the django DEBUG mode based on the conf.
 DEBUG = desktop.conf.DJANGO_DEBUG_MODE.get()
-TEMPLATE_DEBUG = DEBUG
+GTEMPLATE_DEBUG = DEBUG
 if DEBUG: # For simplification, force all DEBUG when django_debug_mode is True and re-apply the loggers
   os.environ[ENV_DESKTOP_DEBUG] = 'True'
   desktop.log.basic_logging(os.environ[ENV_HUE_PROCESS_NAME])
@@ -523,7 +524,7 @@ if desktop.conf.MEMORY_PROFILER.get():
 if not desktop.conf.DATABASE_LOGGING.get():
   def disable_database_logging():
     from django.db.backends.base.base import BaseDatabaseWrapper
-    from django.db.backends.util import CursorWrapper
+    from django.db.backends.utils import CursorWrapper
 
     BaseDatabaseWrapper.make_debug_cursor = lambda self, cursor: CursorWrapper(cursor, self)
 
