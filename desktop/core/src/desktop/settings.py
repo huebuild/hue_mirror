@@ -174,7 +174,7 @@ ROOT_URLCONF = 'desktop.urls'
 # Hue runs its own wsgi applications
 WSGI_APPLICATION = None
 
-TEMPLATE_DIRS = (
+GTEMPLATE_DIRS = (
     get_desktop_root("core/templates"),
 )
 
@@ -207,7 +207,7 @@ LOCALE_PATHS = [
 ]
 
 # Keep default values up to date
-TEMPLATE_CONTEXT_PROCESSORS = (
+GTEMPLATE_CONTEXT_PROCESSORS = (
   'django.contrib.auth.context_processors.auth',
   'django.template.context_processors.debug',
   'django.template.context_processors.i18n',
@@ -221,10 +221,10 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 TEMPLATES = [
   {
     'BACKEND': 'djangomako.backends.MakoBackend',
-    'DIRS': TEMPLATE_DIRS,
+    'DIRS': GTEMPLATE_DIRS,
     'NAME': 'mako',
     'OPTIONS': {
-      'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+      'context_processors': GTEMPLATE_CONTEXT_PROCESSORS,
     },
   },
 ]
@@ -520,7 +520,7 @@ if desktop.conf.MEMORY_PROFILER.get():
 if not desktop.conf.DATABASE_LOGGING.get():
   def disable_database_logging():
     from django.db.backends.base.base import BaseDatabaseWrapper
-    from django.db.backends.util import CursorWrapper
+    from django.db.backends.utils import CursorWrapper
 
     BaseDatabaseWrapper.make_debug_cursor = lambda self, cursor: CursorWrapper(cursor, self)
 
