@@ -47,7 +47,6 @@ from hadoop.fs.exceptions import WebHdfsException
 from useradmin.models import get_profile
 from useradmin.views import ensure_home_directory, require_change_password
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -83,7 +82,7 @@ def first_login_ever():
 @login_notrequired
 @watch_login
 def dt_login(request, from_modal=False):
-  redirect_to = request.REQUEST.get('next', '/')
+  redirect_to = request.GET.get('next', '/')
   is_first_login_ever = first_login_ever()
   backend_names = auth_forms.get_backend_names()
   is_active_directory = auth_forms.is_active_directory()
@@ -136,7 +135,7 @@ def dt_login(request, from_modal=False):
         msg = 'Successful login for user: %s' % user.username
         request.audit['operationText'] = msg
         access_warn(request, msg)
-        if from_modal or request.REQUEST.get('fromModal', 'false') == 'true':
+        if from_modal or request.GET.get('fromModal', 'false') == 'true':
           return JsonResponse({'auth': True})
         else:
           return HttpResponseRedirect(redirect_to)
@@ -145,7 +144,7 @@ def dt_login(request, from_modal=False):
         msg = 'Failed login for user: %s' % request.POST.get('username')
         request.audit['operationText'] = msg
         access_warn(request, msg)
-        if from_modal or request.REQUEST.get('fromModal', 'false') == 'true':
+        if from_modal or request.GET.get('fromModal', 'false') == 'true':
           return JsonResponse({'auth': False})
 
   else:
@@ -267,6 +266,6 @@ def oauth_authenticated(request):
   user = authenticate(access_token=access_token)
   login(request, user)
 
-  redirect_to = request.REQUEST.get('next', '/')
+  redirect_to = request.GET.get('next', '/')
   return HttpResponseRedirect(redirect_to)
 

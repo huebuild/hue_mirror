@@ -224,7 +224,7 @@ def render(template, request, data, json=None, template_lib=None, force_template
   else:
     return _render_to_response(template,
                                request,
-                               RequestContext(request,data),
+                               RequestContext(request, data),
                                template_lib=template_lib,
                                status=status,
                                **kwargs)

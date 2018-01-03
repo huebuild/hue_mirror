@@ -53,7 +53,7 @@ ENV_DESKTOP_DEBUG = "DESKTOP_DEBUG"
 
 # Configure debug mode
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+GTEMPLATE_DEBUG = DEBUG
 
 # Start basic logging as soon as possible.
 if ENV_HUE_PROCESS_NAME not in os.environ:
@@ -130,7 +130,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'build', 'static')
 
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
+GTEMPLATE_LOADERS = (
   'django.template.loaders.filesystem.Loader',
   'django.template.loaders.app_directories.Loader'
 )
@@ -225,6 +225,7 @@ TEMPLATES = [
     'NAME': 'mako',
     'OPTIONS': {
       'context_processors': GTEMPLATE_CONTEXT_PROCESSORS,
+      'loaders': GTEMPLATE_LOADERS,
     },
   },
 ]
@@ -281,7 +282,7 @@ conf.initialize(_app_conf_modules, _config_dir)
 
 # Now that we've loaded the desktop conf, set the django DEBUG mode based on the conf.
 DEBUG = desktop.conf.DJANGO_DEBUG_MODE.get()
-TEMPLATE_DEBUG = DEBUG
+GTEMPLATE_DEBUG = DEBUG
 if DEBUG: # For simplification, force all DEBUG when django_debug_mode is True and re-apply the loggers
   os.environ[ENV_DESKTOP_DEBUG] = 'True'
   desktop.log.basic_logging(os.environ[ENV_HUE_PROCESS_NAME])

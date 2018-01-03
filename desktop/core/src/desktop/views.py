@@ -429,7 +429,7 @@ def log_frontend_event(request):
   "error", or "critical"), and "message".
   """
   def get(param, default=None):
-    return request.REQUEST.get(param, default)
+    return request.GET.get(param, default)
 
   level = _LOG_LEVELS.get(get("level"), logging.INFO)
   msg = "Untrusted log event from user %s: %s" % (

@@ -386,7 +386,7 @@ def get_entity(request):
   response = {'status': -1}
 
   api = NavigatorApi(request.user)
-  entity_id = request.REQUEST.get('id')
+  entity_id = request.GET.get('id')
 
   if not entity_id:
     raise MetadataApiException("get_entity requires an 'id' parameter")
@@ -508,7 +508,7 @@ def get_lineage(request):
   response = {'status': -1, 'inputs': [], 'source_query': '', 'target_queries': [], 'targets': []}
 
   api = NavigatorApi(request.user)
-  entity_id = request.REQUEST.get('id')
+  entity_id = request.GET.get('id')
 
   if not entity_id:
     raise MetadataApiException("get_lineage requires an 'id' parameter")
