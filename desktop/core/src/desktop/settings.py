@@ -161,7 +161,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.csrf.CsrfViewMiddleware',
 
     'django.middleware.http.ConditionalGetMiddleware',
-    'axes.middleware.FailedLoginMiddleware',
+    #'axes.middleware.FailedLoginMiddleware',
     'desktop.middleware.MimeTypeJSFileFixStreamingMiddleware',
 ]
 
