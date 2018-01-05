@@ -30,7 +30,7 @@ from django.contrib.auth.models import User, Group
 from django.contrib.sessions.models import Session
 from django.db.models import Q
 from django.utils.encoding import smart_unicode
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.test.client import Client
 
 import desktop.conf

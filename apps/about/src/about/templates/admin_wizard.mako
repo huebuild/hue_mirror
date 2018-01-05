@@ -15,7 +15,7 @@
 ## limitations under the License.
 
 <%!
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
 

@@ -23,7 +23,7 @@ import urllib2
 
 from urlparse import urlparse, urlunparse
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from desktop.conf import REST_CONN_TIMEOUT
 from desktop.lib.view_util import format_duration_in_millis
 from desktop.lib import i18n
