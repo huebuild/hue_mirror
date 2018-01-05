@@ -21,12 +21,13 @@
 DEVTOOLS += \
 	ipdb[0.1dev-r1716] \
 	ipython[0.10] \
-	nose[0.11.3] \
-	coverage[3.7.1] \
+	nose[1.3.7] \
+	coverage[4.4.2] \
 	nosetty[0.4] \
-	werkzeug[0.6] \
-	windmill[1.3] \
-	pylint[0.28.0]
+	werkzeug[0.14.1] \
+	windmill[1.6] \
+	pylint[1.8.1] \
+        astroid[1.5.3]
 
 # Install/download dev tools for SDK into the virtual environment
 .PHONY: $(DEVTOOLS)
