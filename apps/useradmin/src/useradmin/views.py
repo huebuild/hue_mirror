@@ -356,7 +356,7 @@ def edit_user(request, username=None):
         if request.user.is_superuser:
           return redirect(reverse('about:index'))
         else:
-          return redirect(reverse('desktop.views.home'))
+          return redirect(reverse('desktop_views_home'))
       elif request.user.is_superuser:
         if is_embeddable:
           return JsonResponse({'url': '/hue' + reverse(list_users)})
