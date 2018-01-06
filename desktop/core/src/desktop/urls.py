@@ -35,6 +35,7 @@ desktop.lib.metrics.file_reporter.start_file_reporter()
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.static import serve
 
 from desktop import appmanager
 from desktop.conf import METRICS, USE_NEW_EDITOR
@@ -59,7 +60,7 @@ admin.autodiscover()
 
 # Some django-wide URLs
 dynamic_patterns = [
-  url(r'^hue/accounts/login', desktop_auth_views.dt_login, name='desktop_auth_views.dt_login'),
+  url(r'^hue/accounts/login', desktop_auth_views.dt_login, name='desktop_auth_views_dt_login'),
   url(r'^accounts/login/$', desktop_auth_views.dt_login), # Deprecated
   url(r'^accounts/logout/$', desktop_auth_views.dt_logout, {'next_page': '/'}),
   url(r'^profile$', desktop_auth_views.profile),
@@ -70,14 +71,14 @@ dynamic_patterns = [
 
 if USE_NEW_EDITOR.get():
   dynamic_patterns += [
-    url(r'^home/?$', desktop_views.home2),
-    url(r'^home2$', desktop_views.home),
+    url(r'^home/?$', desktop_views.home2, name='desktop_views_home2'),
+    url(r'^home2$', desktop_views.home, name='desktop_views_home'),
     url(r'^home_embeddable$', desktop_views.home_embeddable),
   ]
 else:
   dynamic_patterns += [
-    url(r'^home$', desktop_views.home),
-    url(r'^home2$', desktop_views.home2)
+    url(r'^home$', desktop_views.home, name='desktop_views_home'),
+    url(r'^home2$', desktop_views.home2, name='desktop_views_home2')
   ]
 
 dynamic_patterns += [
@@ -120,7 +121,7 @@ dynamic_patterns += [
   url(r'^desktop/workers/aceSqlSyntaxWorker.js', desktop_views.ace_sql_syntax_worker),
 
   # Unsupported browsers
-  url(r'^boohoo$', desktop_views.unsupported),
+  url(r'^boohoo$', desktop_views.unsupported, name='desktop_views_unsupported'),
 
   # Top level web page!
   url(r'^$', desktop_views.index),
@@ -216,11 +217,11 @@ for app in appmanager.DESKTOP_MODULES:
       app.urls_imported = True
 
 static_patterns = []
-#static_patterns.append(
-#    url(r'^%s(?P<path>.*)$' % re.escape(settings.STATIC_URL.lstrip('/')),
-#      'django.views.static.serve',
-#      { 'document_root': settings.STATIC_ROOT })
-#)
+static_patterns.append(
+    url(r'^%s(?P<path>.*)$' % re.escape(settings.STATIC_URL.lstrip('/')),
+      serve,
+      { 'document_root': settings.STATIC_ROOT })
+)
 
 urlpatterns = []
 urlpatterns.extend(dynamic_patterns)
