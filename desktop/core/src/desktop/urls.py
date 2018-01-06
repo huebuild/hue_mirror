@@ -230,5 +230,7 @@ urlpatterns.extend(static_patterns)
 
 for x in dynamic_patterns:
   logging.debug("Dynamic pattern: %s" % (x,))
+for x in app_urls_patterns:
+  logging.debug("Dynamic pattern: %s" % (x,))
 for x in static_patterns:
   logging.debug("Static pattern: %s" % (x,))
