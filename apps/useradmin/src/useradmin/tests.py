@@ -46,7 +46,7 @@ import useradmin.ldap_access
 from useradmin.middleware import ConcurrentUserSessionMiddleware
 from useradmin.models import HuePermission, GroupPermission, UserProfile
 from useradmin.models import get_profile, get_default_user_group
-from useradmin.password_policy import reset_password_policy
+from useradmin.hue_password_policy import reset_password_policy
 
 
 def reset_all_users():
