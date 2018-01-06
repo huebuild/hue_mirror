@@ -104,7 +104,7 @@ dynamic_patterns += [
   # Mobile
   url(r'^assist_m', desktop_views.assist_m),
   # Hue 4
-  url(r'^hue.*/$', desktop_views.hue),
+  url(r'^hue.*/$', desktop_views.hue, name='desktop_views_hue'),
   url(r'^403$', desktop_views.path_forbidden),
   url(r'^404$', desktop_views.not_found),
   url(r'^500$', desktop_views.server_error),
