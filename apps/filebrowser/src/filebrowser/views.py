@@ -23,7 +23,6 @@ import os
 import parquet
 import posixpath
 import re
-import shutil
 import stat as stat_module
 import urllib
 from urlparse import urlparse
@@ -34,7 +33,7 @@ from cStringIO import StringIO
 from gzip import GzipFile
 
 from django.contrib.auth.models import User, Group
-from django.core.paginator import EmptyPage
+from django.core.paginator import EmptyPage, Paginator, Page, InvalidPage
 from django.urls import reverse
 from django.template.defaultfilters import stringformat, filesizeformat
 from django.http import Http404, StreamingHttpResponse, HttpResponseNotModified, HttpResponseForbidden, HttpResponse
@@ -49,7 +48,7 @@ from django.utils.translation import ugettext as _
 from aws.s3.s3fs import S3FileSystemException
 from avro import datafile, io
 from desktop import appmanager
-from desktop.lib import i18n, paginator
+from desktop.lib import i18n
 from desktop.lib.conf import coerce_bool
 from desktop.lib.django_util import render, format_preserving_redirect
 from desktop.lib.django_util import JsonResponse
@@ -323,7 +322,7 @@ def save_file(request):
     except Exception, e:
         raise PopupException(_("The file could not be saved"), detail=e)
 
-    request.path = reverse("filebrowser.views.edit", kwargs=dict(path=path))
+    request.path = reverse("filebrowser_views_edit", kwargs=dict(path=path))
     return edit(request, path, form)
 
 
@@ -334,7 +333,7 @@ def parse_breadcrumbs(path):
       if url and not url.endswith('/'):
         url += '/'
       url += part
-      breadcrumbs.append({'url': urllib.quote(url.encode('utf-8')), 'label': part})
+      breadcrumbs.append({'url': url, 'label': part})
     return breadcrumbs
 
 
@@ -358,11 +357,11 @@ def listdir(request, path):
     breadcrumbs = parse_breadcrumbs(path)
 
     data = {
-        'path': urllib.quote(path.encode('utf-8')),
+        'path': path,
         'file_filter': file_filter,
         'breadcrumbs': breadcrumbs,
-        'current_dir_path': urllib.quote(path.encode('utf-8')),
-        'current_request_path': urllib.quote(request.path.encode('utf-8')),
+        'current_dir_path': path,
+        'current_request_path': request.path,
         'home_directory': request.fs.isdir(home_dir_path) and home_dir_path or None,
         'cwd_set': True,
         'is_superuser': request.user.username == request.fs.superuser,
@@ -389,15 +388,25 @@ def listdir(request, path):
     data['files'] = [_massage_stats(request, stat_absolute_path(path, stat)) for stat in stats]
     return render('listdir.mako', request, data)
 
-def _massage_page(page):
+def _massage_page(page, paginator):
+    try:
+        prev_num = page.previous_page_number()
+    except InvalidPage:
+        prev_num = 0
+
+    try:
+        next_num = page.next_page_number()
+    except InvalidPage:
+        next_num = 0
+
     return {
         'number': page.number,
-        'num_pages': page.num_pages(),
-        'previous_page_number': page.previous_page_number(),
-        'next_page_number': page.next_page_number(),
+        'num_pages': paginator.num_pages,
+        'previous_page_number': prev_num,
+        'next_page_number': next_num,
         'start_index': page.start_index(),
         'end_index': page.end_index(),
-        'total_count': page.total_count()
+        'total_count': paginator.count
     }
 
 def listdir_paged(request, path):
@@ -456,10 +465,12 @@ def listdir_paged(request, path):
 
     # Do pagination
     try:
-      page = paginator.Paginator(all_stats, pagesize).page(pagenum)
+      paginator = Paginator(all_stats, pagesize, allow_empty_first_page=True)
+      page = paginator.page(pagenum)
       shown_stats = page.object_list
     except EmptyPage:
       logger.warn("No results found for requested page.")
+      paginator = None
       page = None
       shown_stats = []
 
@@ -490,19 +501,19 @@ def listdir_paged(request, path):
 
     is_fs_superuser = _is_hdfs_superuser(request)
     data = {
-        'path': urllib.quote(path.encode('utf-8')),
+        'path': path,
         'breadcrumbs': breadcrumbs,
-        'current_request_path': urllib.quote(request.path.encode('utf-8')),
+        'current_request_path': request.path,
         'is_trash_enabled': is_trash_enabled,
         'files': page.object_list if page else [],
-        'page': _massage_page(page) if page else {},
+        'page': _massage_page(page, paginator) if page else {},
         'pagesize': pagesize,
         'home_directory': request.fs.isdir(home_dir_path) and home_dir_path or None,
         'descending': descending_param,
         # The following should probably be deprecated
         'cwd_set': True,
         'file_filter': 'any',
-        'current_dir_path': urllib.quote(path.encode('utf-8')),
+        'current_dir_path': path,
         'is_fs_superuser': is_fs_superuser,
         'groups': is_fs_superuser and [str(x) for x in Group.objects.values_list('name', flat=True)] or [],
         'users': is_fs_superuser and [str(x) for x in User.objects.values_list('username', flat=True)] or [],
@@ -535,7 +546,7 @@ def _massage_stats(request, stats):
     path = stats['path']
     normalized = request.fs.normpath(path)
     return {
-        'path': urllib.quote(normalized.encode('utf-8')),
+        'path': normalized,
         'name': stats['name'],
         'stats': stats.to_json_dict(),
         'mtime': datetime.fromtimestamp(stats['mtime']).strftime('%B %d, %Y %I:%M %p') if stats['mtime'] else '',
@@ -1074,11 +1085,8 @@ def generic_op(form_class, request, op, parameter_names, piggyback=None, templat
                 return format_preserving_redirect(request, next)
             ret["success"] = True
             try:
-                if piggyback: # TODO: result does not support array.
-                    if isinstance(form.cleaned_data, list):
-                        piggy_path = form.cleaned_data[0][piggyback]
-                    else:
-                        piggy_path = form.cleaned_data[piggyback]
+                if piggyback:
+                    piggy_path = form.cleaned_data.get(piggyback)
                     ret["result"] = _massage_stats(request, stat_absolute_path(piggy_path ,request.fs.stats(piggy_path)))
             except Exception, e:
                 # Hard to report these more naturally here.  These happen either
@@ -1102,8 +1110,6 @@ def generic_op(form_class, request, op, parameter_names, piggyback=None, templat
 
 def rename(request):
     def smart_rename(src_path, dest_path):
-        src_path = urllib.unquote(src_path)
-        dest_path = urllib.unquote(dest_path)
         """If dest_path doesn't have a directory specified, use same dir."""
         if "#" in dest_path:
           raise PopupException(_("Could not rename folder \"%s\" to \"%s\": Hashes are not allowed in filenames." % (src_path, dest_path)))
@@ -1118,7 +1124,7 @@ def rename(request):
 
 def set_replication(request):
     def smart_set_replication(src_path, replication_factor):
-        result = request.fs.set_replication(urllib.unquote(src_path), replication_factor)
+        result = request.fs.set_replication(src_path, replication_factor)
         if not result:
             raise PopupException(_("Setting of replication factor failed"))
 
@@ -1131,7 +1137,7 @@ def mkdir(request):
         # No absolute directory specification allowed.
         if posixpath.sep in name or "#" in name:
             raise PopupException(_("Could not name folder \"%s\": Slashes or hashes are not allowed in filenames." % name))
-        request.fs.mkdir(request.fs.join(urllib.unquote(path), urllib.unquote(name)))
+        request.fs.mkdir(request.fs.join(path, name))
 
     return generic_op(MkDirForm, request, smart_mkdir, ["path", "name"], "path")
 
@@ -1141,7 +1147,7 @@ def touch(request):
         # No absolute path specification allowed.
         if posixpath.sep in name:
             raise PopupException(_("Could not name file \"%s\": Slashes are not allowed in filenames." % name))
-        request.fs.create(request.fs.join(urllib.unquote(path), name))
+        request.fs.create(request.fs.join(path, name))
 
     return generic_op(TouchForm, request, smart_touch, ["path", "name"], "path")
 
@@ -1151,7 +1157,7 @@ def rmtree(request):
     params = ["path"]
     def bulk_rmtree(*args, **kwargs):
         for arg in args:
-            request.fs.do_as_user(request.user, request.fs.rmtree, urllib.unquote(arg['path']), 'skip_trash' in request.GET)
+            request.fs.do_as_user(request.user, request.fs.rmtree, arg['path'], 'skip_trash' in request.GET)
     return generic_op(RmTreeFormSet, request, bulk_rmtree, ["path"], None,
                       data_extractor=formset_data_extractor(recurring, params),
                       arg_extractor=formset_arg_extractor,
@@ -1164,7 +1170,7 @@ def move(request):
     params = ['src_path']
     def bulk_move(*args, **kwargs):
         for arg in args:
-            request.fs.rename(urllib.unquote(arg['src_path']), urllib.unquote(arg['dest_path']))
+            request.fs.rename(arg['src_path'], arg['dest_path'])
     return generic_op(RenameFormSet, request, bulk_move, ["src_path", "dest_path"], None,
                       data_extractor=formset_data_extractor(recurring, params),
                       arg_extractor=formset_arg_extractor,
@@ -1179,7 +1185,7 @@ def copy(request):
         for arg in args:
             if arg['src_path'] == arg['dest_path']:
                 raise PopupException(_('Source path and destination path cannot be same'))
-            request.fs.copy(urllib.unquote(arg['src_path']), urllib.unquote(arg['dest_path']), recursive=True, owner=request.user)
+            request.fs.copy(arg['src_path'], arg['dest_path'], recursive=True, owner=request.user)
     return generic_op(CopyFormSet, request, bulk_copy, ["src_path", "dest_path"], None,
                       data_extractor=formset_data_extractor(recurring, params),
                       arg_extractor=formset_arg_extractor,
@@ -1193,7 +1199,7 @@ def chmod(request):
     def bulk_chmod(*args, **kwargs):
         op = curry(request.fs.chmod, recursive=request.POST.get('recursive', False))
         for arg in args:
-            op(urllib.unquote(arg['path']), arg['mode'])
+            op(arg['path'], arg['mode'])
     # mode here is abused: on input, it's a string, but when retrieved,
     # it's an int.
     return generic_op(ChmodFormSet, request, bulk_chmod, ['path', 'mode'], "path",
@@ -1218,7 +1224,7 @@ def chown(request):
     def bulk_chown(*args, **kwargs):
         op = curry(request.fs.chown, recursive=request.POST.get('recursive', False))
         for arg in args:
-            varg = [urllib.unquote(arg[param]) if param == 'path' else arg[param] for param in param_names]
+            varg = [arg[param] for param in param_names]
             op(*varg)
 
     return generic_op(ChownFormSet, request, bulk_chown, param_names, "path",
@@ -1233,7 +1239,7 @@ def trash_restore(request):
     params = ["path"]
     def bulk_restore(*args, **kwargs):
         for arg in args:
-            request.fs.do_as_user(request.user, request.fs.restore, urllib.unquote(arg['path']))
+            request.fs.do_as_user(request.user, request.fs.restore, arg['path'])
     return generic_op(RestoreFormSet, request, bulk_restore, ["path"], None,
                       data_extractor=formset_data_extractor(recurring, params),
                       arg_extractor=formset_arg_extractor,
@@ -1282,7 +1288,7 @@ def _upload_file(request):
 
     if form.is_valid():
         uploaded_file = request.FILES['hdfs_file']
-        dest = scheme_absolute_path(request.GET['dest'], urllib.unquote(form.cleaned_data['dest']))
+        dest = scheme_absolute_path(request.GET['dest'], form.cleaned_data['dest'])
         filepath = request.fs.join(dest, uploaded_file.name)
 
         if request.fs.isdir(dest) and posixpath.sep in uploaded_file.name:
@@ -1305,7 +1311,7 @@ def _upload_file(request):
             raise PopupException(msg)
 
         response.update({
-          'path': urllib.quote(filepath.encode('utf-8')),
+          'path': filepath,
           'result': _massage_stats(request, stat_absolute_path(filepath, request.fs.stats(filepath))),
           'next': request.GET.get("next")
         })
@@ -1368,31 +1374,6 @@ def status(request):
         'name': request.fs.name
     }
     return render("status.mako", request, data)
-
-
-def location_to_url(location, strict=True, is_embeddable=False):
-    """
-    If possible, returns a file browser URL to the location.
-    Prunes HDFS URI to path.
-    Location is a URI, if strict is True.
-
-    Python doesn't seem to have a readily-available URI-comparison
-    library, so this is quite hacky.
-    """
-    if location is None:
-      return None
-    split_path = Hdfs.urlsplit(location)
-    if strict and not split_path[1] or not split_path[2]:
-      # No netloc not full url or no URL
-      return None
-    path = location
-    if split_path[0] == 'hdfs':
-      path = split_path[2]
-
-    filebrowser_path = reverse("filebrowser.views.view", kwargs=dict(path=path))
-    if is_embeddable and not filebrowser_path.startswith('/hue'):
-        filebrowser_path = '/hue' + filebrowser_path
-    return filebrowser_path
 
 
 def truncate(toTruncate, charsToKeep=50):
