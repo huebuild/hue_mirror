@@ -34,7 +34,7 @@ from cStringIO import StringIO
 from gzip import GzipFile
 
 from django.contrib.auth.models import User, Group
-from django.core.paginator import EmptyPage
+from django.core.paginator import EmptyPage, Paginator, Page, InvalidPage
 from django.urls import reverse
 from django.template.defaultfilters import stringformat, filesizeformat
 from django.http import Http404, StreamingHttpResponse, HttpResponseNotModified, HttpResponseForbidden, HttpResponse
@@ -49,7 +49,7 @@ from django.utils.translation import ugettext as _
 from aws.s3.s3fs import S3FileSystemException
 from avro import datafile, io
 from desktop import appmanager
-from desktop.lib import i18n, paginator
+from desktop.lib import i18n
 from desktop.lib.conf import coerce_bool
 from desktop.lib.django_util import render, format_preserving_redirect
 from desktop.lib.django_util import JsonResponse
@@ -324,7 +324,7 @@ def save_file(request):
     except Exception, e:
         raise PopupException(_("The file could not be saved"), detail=e)
 
-    request.path = reverse("filebrowser.views.edit", kwargs=dict(path=path))
+    request.path = reverse("filebrowser_views_edit", kwargs=dict(path=path))
     return edit(request, path, form)
 
 
@@ -390,15 +390,25 @@ def listdir(request, path):
     data['files'] = [_massage_stats(request, stat_absolute_path(path, stat)) for stat in stats]
     return render('listdir.mako', request, data)
 
-def _massage_page(page):
+def _massage_page(page, paginator):
+    try:
+        prev_num = page.previous_page_number()
+    except InvalidPage:
+        prev_num = 0
+
+    try:
+        next_num = page.next_page_number()
+    except InvalidPage:
+        next_num = 0
+
     return {
         'number': page.number,
-        'num_pages': page.num_pages(),
-        'previous_page_number': page.previous_page_number(),
-        'next_page_number': page.next_page_number(),
+        'num_pages': paginator.num_pages,
+        'previous_page_number': prev_num,
+        'next_page_number': next_num,
         'start_index': page.start_index(),
         'end_index': page.end_index(),
-        'total_count': page.total_count()
+        'total_count': paginator.count
     }
 
 def listdir_paged(request, path):
@@ -457,10 +467,12 @@ def listdir_paged(request, path):
 
     # Do pagination
     try:
-      page = paginator.Paginator(all_stats, pagesize).page(pagenum)
+      paginator = Paginator(all_stats, pagesize, allow_empty_first_page=True)
+      page = paginator.page(pagenum)
       shown_stats = page.object_list
     except EmptyPage:
       logger.warn("No results found for requested page.")
+      paginator = None
       page = None
       shown_stats = []
 
@@ -496,7 +508,8 @@ def listdir_paged(request, path):
         'current_request_path': request.path,
         'is_trash_enabled': is_trash_enabled,
         'files': page.object_list if page else [],
-        'page': _massage_page(page) if page else {},
+        'page': _massage_page(page, paginator) if page else {},
+        'paginator': paginator,
         'pagesize': pagesize,
         'home_directory': request.fs.isdir(home_dir_path) and home_dir_path or None,
         'descending': descending_param,
@@ -1076,7 +1089,7 @@ def generic_op(form_class, request, op, parameter_names, piggyback=None, templat
             ret["success"] = True
             try:
                 if piggyback:
-                    piggy_path = form.cleaned_data[piggyback]
+                    piggy_path = form.cleaned_data.get(piggyback)
                     ret["result"] = _massage_stats(request, stat_absolute_path(piggy_path ,request.fs.stats(piggy_path)))
             except Exception, e:
                 # Hard to report these more naturally here.  These happen either

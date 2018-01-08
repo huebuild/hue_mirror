@@ -78,7 +78,7 @@ class TestLoginWithHadoop(PseudoHdfsTestBase):
   def test_login(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_true(response.context['first_login_ever'])
+    assert_true(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', dict(username=self.test_username, password="foo"))
     assert_equal(302, response.status_code, "Expected ok redirect status.")
@@ -86,12 +86,12 @@ class TestLoginWithHadoop(PseudoHdfsTestBase):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
   def test_login_home_creation_failure(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_true(response.context['first_login_ever'])
+    assert_true(response.context[0]['first_login_ever'])
 
     # Create home directory as a file in order to fail in the home creation later
     cluster = pseudo_hdfs4.shared_cluster()
@@ -187,7 +187,7 @@ class TestLdapLogin(PseudoHdfsTestBase):
   def test_login(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', {
         'username': self.test_username,
@@ -199,7 +199,7 @@ class TestLdapLogin(PseudoHdfsTestBase):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
   def test_login_failure_for_bad_username(self):
     self.reset.append(conf.LDAP.LDAP_SERVERS.set_for_testing(get_mocked_config()))
@@ -255,7 +255,7 @@ class TestLdapLogin(PseudoHdfsTestBase):
   def test_login_home_creation_failure(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     # Create home directory as a file in order to fail in the home creation later
     cluster = pseudo_hdfs4.shared_cluster()
@@ -403,7 +403,7 @@ class TestRemoteUserLogin(PseudoHdfsTestBase):
   def test_normal(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     assert_equal(0, len(User.objects.all()))
     response = self.c.post('/hue/accounts/login/', {}, **{"REMOTE_USER": self.test_username})
@@ -416,7 +416,7 @@ class TestRemoteUserLogin(PseudoHdfsTestBase):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', {}, **{"REMOTE_USER": self.test_username})
     assert_equal(200, response.status_code, "Expected ok status.")
@@ -443,7 +443,7 @@ class TestRemoteUserLogin(PseudoHdfsTestBase):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', {}, **{"REMOTE_USER": self.test_username})
     assert_equal(200, response.status_code, "Expected ok status.")
@@ -590,7 +590,7 @@ class TestMultipleBackendLoginNoHadoop(object):
   def test_login(self):
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_true(response.context['first_login_ever'])
+    assert_true(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', {
         'username': self.test_username,
@@ -603,7 +603,7 @@ class TestMultipleBackendLoginNoHadoop(object):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_false(response.context['first_login_ever'])
+    assert_false(response.context[0]['first_login_ever'])
 
     self.c.get('/accounts/logout')
 
@@ -653,11 +653,12 @@ class TestLogin(PseudoHdfsTestBase):
 
     response = self.c.get('/hue/accounts/login/')
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_true(response.context['first_login_ever'])
+    assert_true(response.context[0]['first_login_ever'])
 
     response = self.c.post('/hue/accounts/login/', dict(username="foo 1", password="foo"))
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_true('This value may contain only letters, numbers and @/./+/-/_ characters.' in response.content, response)
+    #assert_true('This value may contain only letters, numbers and @/./+/-/_ characters.' in response.content, response)
+    assert_true('This value may contain only ' in response.content, response)
 
   def test_non_jframe_login(self):
     client = make_logged_in_client(username=self.test_username, password="test")
@@ -798,7 +799,7 @@ class TestImpersonationBackend(object):
 
     response = self.client.post('/hue/accounts/login/', dict(username=self.test_username, password="test", login_as=self.test_login_as_username), follow=True)
     assert_equal(200, response.status_code)
-    assert_equal(self.test_login_as_username, response.context['user'].username)
+    assert_equal(self.test_login_as_username, response.context[0]['user'].username)
 
 
 class MockLdapBackend(object):

@@ -24,19 +24,19 @@ urlpatterns = [
   url(r'^$', filebrowser_views.index, name='index'),
 
   # Catch-all for viewing a file (display) or a directory (listdir)
-  url(r'^view=(?P<path>.*)$', filebrowser_views.view, name='view'),
+  url(r'^view=(?P<path>.*)$', filebrowser_views.view, name='filebrowser.views.view'),
 
   url(r'^listdir=(?P<path>.*)$', filebrowser_views.listdir, name='listdir'),
   url(r'^display=(?P<path>.*)$', filebrowser_views.display, name='display'),
   url(r'^stat=(?P<path>.*)$', filebrowser_views.stat, name='stat'),
   url(r'^content_summary=(?P<path>.*)$', filebrowser_views.content_summary, name='content_summary'),
-  url(r'^download=(?P<path>.*)$', filebrowser_views.download, name='download'),
+  url(r'^download=(?P<path>.*)$', filebrowser_views.download, name='filebrowser.views.download'),
   url(r'^status$', filebrowser_views.status, name='status'),
   url(r'^home_relative_view=(?P<path>.*)$', filebrowser_views.home_relative_view, name='home_relative_view'),
-  url(r'^edit=(?P<path>.*)$', filebrowser_views.edit, name='edit'),
+  url(r'^edit=(?P<path>.*)$', filebrowser_views.edit, name='filebrowser_views_edit'),
 
   # POST operations
-  url(r'^save$', filebrowser_views.save_file),
+  url(r'^save$', filebrowser_views.save_file, name="filebrowser_views_save_file"),
   url(r'^upload/file$', filebrowser_views.upload_file, name='upload_file'),
   url(r'^extract_archive', filebrowser_views.extract_archive_using_batch_job, name='extract_archive_using_batch_job'),
   url(r'^compress_files', filebrowser_views.compress_files_using_batch_job, name='compress_files_using_batch_job'),
