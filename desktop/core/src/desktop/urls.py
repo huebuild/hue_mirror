@@ -25,9 +25,6 @@ import re
 #
 # https://docs.djangoproject.com/en/1.7/ref/applications/#django.apps.AppConfig.ready
 #
-# For now though we have to load in the monkey patches here because we know
-# this file has been loaded after `desktop.settings` has been loaded.
-import desktop.monkey_patches
 
 import desktop.lib.metrics.file_reporter
 desktop.lib.metrics.file_reporter.start_file_reporter()
