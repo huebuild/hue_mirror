@@ -508,7 +508,6 @@ def listdir_paged(request, path):
         'is_trash_enabled': is_trash_enabled,
         'files': page.object_list if page else [],
         'page': _massage_page(page, paginator) if page else {},
-        'paginator': paginator,
         'pagesize': pagesize,
         'home_directory': request.fs.isdir(home_dir_path) and home_dir_path or None,
         'descending': descending_param,
