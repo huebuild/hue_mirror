@@ -23,7 +23,6 @@ import os
 import parquet
 import posixpath
 import re
-import shutil
 import stat as stat_module
 import urllib
 from urlparse import urlparse
@@ -1368,31 +1367,6 @@ def status(request):
         'name': request.fs.name
     }
     return render("status.mako", request, data)
-
-
-def location_to_url(location, strict=True, is_embeddable=False):
-    """
-    If possible, returns a file browser URL to the location.
-    Prunes HDFS URI to path.
-    Location is a URI, if strict is True.
-
-    Python doesn't seem to have a readily-available URI-comparison
-    library, so this is quite hacky.
-    """
-    if location is None:
-      return None
-    split_path = Hdfs.urlsplit(location)
-    if strict and not split_path[1] or not split_path[2]:
-      # No netloc not full url or no URL
-      return None
-    path = location
-    if split_path[0] == 'hdfs':
-      path = split_path[2]
-
-    filebrowser_path = reverse("filebrowser.views.view", kwargs=dict(path=path))
-    if is_embeddable and not filebrowser_path.startswith('/hue'):
-        filebrowser_path = '/hue' + filebrowser_path
-    return filebrowser_path
 
 
 def truncate(toTruncate, charsToKeep=50):
