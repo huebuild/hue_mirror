@@ -808,7 +808,7 @@ class MockLdapBackend(object):
   def get_or_create_user(self, username, ldap_user):
     return User.objects.get_or_create(username)
 
-  def authenticate(self, username=None, password=None, server=None):
+  def authenticate(self, request=None, username=None, password=None, server=None):
     user, created = self.get_or_create_user(username, None)
     return user
 

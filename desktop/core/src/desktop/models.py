@@ -30,6 +30,7 @@ except ImportError:
 from itertools import chain
 
 from django.contrib.auth import models as auth_models
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -53,7 +54,6 @@ from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.paths import get_run_root
 from desktop.redaction import global_redaction_engine
 from desktop.settings import DOCUMENT2_SEARCH_MAX_LENGTH
-
 
 LOG = logging.getLogger(__name__)
 
@@ -91,6 +91,16 @@ def _version_from_properties(f):
 ###################################################################################################
 
 PREFERENCE_IS_WELCOME_TOUR_SEEN = 'is_welcome_tour_seen'
+
+class HueUser(auth_models.User):
+  class Meta:
+    proxy = True
+
+  def __init__(self, *args, **kwargs):
+    self._meta.get_field(
+      'username'
+    ).validators[0] = UnicodeUsernameValidator()
+    super(auth_models.User, self).__init__(*args, **kwargs)
 
 
 class UserPreferences(models.Model):

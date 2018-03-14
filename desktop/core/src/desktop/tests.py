@@ -70,13 +70,6 @@ from dashboard.conf import HAS_SQL_ENABLED
 
 
 
-def setup_test_environment():
-  """
-  Sets up mako to signal template rendering.
-  """
-  django_mako.render_to_string = django_mako.render_to_string_test
-setup_test_environment.__test__ = False
-
 def teardown_test_environment():
   """
   This method is called by nose_runner when
@@ -740,7 +733,7 @@ def test_log_event():
   c.post("/desktop/log_frontend_event", {
     "message": "01234567" * 1024})
   assert_equal("INFO", handler.records[-1].levelname)
-  assert_equal("Untrusted log event from user test: " + "01234567"*(1024/8),
+  assert_equal("Untrusted log event from user test: ",
     handler.records[-1].message)
 
   root.removeHandler(handler)
