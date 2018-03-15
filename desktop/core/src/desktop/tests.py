@@ -36,6 +36,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.http import HttpResponse
 from django.db.models import query, CharField, SmallIntegerField
+from django.test.utils import teardown_test_environment, setup_test_environment
 
 from configobj import ConfigObj
 
@@ -68,29 +69,14 @@ from desktop.views import check_config, home, generate_configspec, load_confs, c
 from desktop.auth.backend import rewrite_user
 from dashboard.conf import HAS_SQL_ENABLED
 
+try:
+    # If setup_test_environment haven't been called previously this
+    # will produce an AttributeError.
+    teardown_test_environment()
+except AttributeError:
+    pass
 
-
-def teardown_test_environment():
-  """
-  This method is called by nose_runner when
-  the tests all finish.  This helps track
-  down when tests aren't cleaning up after
-  themselves and leaving threads hanging around.
-  """
-  import threading
-  import desktop.lib.thread_util
-
-  # We should shut down all relevant threads by test completion.
-  threads = list(threading.enumerate())
-
-  if len(threads) > 1:
-    desktop.lib.thread_util.dump_traceback()
-
-  assert 1 == len(threads), threads
-
-  django_mako.render_to_string = django_mako.render_to_string_normal
-teardown_test_environment.__test__ = False
-
+setup_test_environment()
 
 def test_home():
   c = make_logged_in_client(username="test_home", groupname="test_home", recreate=True, is_superuser=False)
