@@ -237,7 +237,7 @@ class TestLdapLogin(PseudoHdfsTestBase):
     # No groups
     response = client.post('/hue/accounts/login/', dict(username=self.test_username, password="test"), follow=True)
     assert_equal(200, response.status_code, "Expected ok status.")
-    assert_equal([default_group.name], list(user.groups.values_list('name', flat=True)))
+    assert_equal([default_group.name], [i for i in user.groups.values_list('name', flat=True)])
 
     add_to_group(self.test_username, self.test_username)
 
@@ -821,7 +821,7 @@ class MockLdapBackend(object):
   def get_or_create_user(self, username, ldap_user):
     return User.objects.get_or_create(username)
 
-  def authenticate(self, request=None, username=None, password=None, server=None):
+  def authenticate(self, username=None, password=None, server=None):
     user, created = self.get_or_create_user(username, None)
     return user
 
