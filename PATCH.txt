@@ -1,0 +1,3 @@
+PATCH-2970
+HUE-8191 [jb] UnicodeEncodeError occurs in Job Browser when browser language is not English
+HUE-8202 [jb] Fix mutual authentication failed with Isilon
