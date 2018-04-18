@@ -25,6 +25,7 @@ BINDIR=$(dirname $0)
 HUE_ROOT=$PWD
 
 export REPO_TRACE=1
+export PYPI_MIRROR="https://pypi.infra.cloudera.com/api/pypi/pypi-public/simple/"
 
 . $BINDIR/build-functions
 
