@@ -28,7 +28,7 @@ DEVTOOLS += \
 	windmill[1.3] \
 	pylint[0.28.0]
 
-PYPI_MIRROR ?= 'https://pypi.python.org/'
+PYPI_MIRROR ?= 'https://pypi.infra.cloudera.com/api/pypi/pypi-public/simple/'
 
 # Install/download dev tools for SDK into the virtual environment
 .PHONY: $(DEVTOOLS)
