@@ -19,6 +19,7 @@
 
 # May require download from PyPI or whereever
 DEVTOOLS += \
+	nose[1.0.0] \
 	coverage[3.7.1] \
 	nosetty[0.4] \
 	werkzeug[0.6] \
