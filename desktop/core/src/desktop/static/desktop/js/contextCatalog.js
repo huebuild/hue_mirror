@@ -35,6 +35,31 @@ var ContextCatalog = (function () {
   var COMPUTES_CONTEXT_TYPE = 'computes';
   var DISABLE_CACHE = true;
 
+  var DEFAULT_COMPUTES = [{
+    interface: 'all',
+    server_host: 'all',
+    type: 'direct',
+    id: 'default',
+    name: 'default'
+  }];
+
+  var DEFAULT_NAMESPACES = [{
+    computes: DEFAULT_COMPUTES,
+    id: 'default',
+    name: 'default',
+    status: 'CREATED'
+  }];
+
+  var DEFAULT_CLUSTERS = [{
+    environmentType: 'direct',
+    id: 'default',
+    name: 'default',
+    namespace: 'default',
+    serviceType: 'all',
+    status: 'CREATED',
+    type: 'direct'
+  }];
+
   var ContextCatalog = (function () {
 
     function ContextCatalog() {
@@ -137,7 +162,8 @@ var ContextCatalog = (function () {
       self.namespacePromises[options.sourceType] = deferred.promise();
 
       var fetchNamespaces = function () {
-        ApiHelper.getInstance().fetchContextNamespaces(options).done(function (namespaces) {
+
+        var handleNamespacesResponse = function (namespaces) {
           if (namespaces[options.sourceType]) {
             var dynamic = namespaces.dynamicClusters;
             var namespaces = namespaces[options.sourceType];
@@ -153,8 +179,8 @@ var ContextCatalog = (function () {
                 })
               });
               self.namespaces[options.sourceType] = { namespaces: namespaces.filter(function (namespace) {
-                return namespace.name; // Only include namespaces with a name.
-              }), dynamic: dynamic, hueTimestamp: Date.now() };
+                  return namespace.name; // Only include namespaces with a name.
+                }), dynamic: dynamic, hueTimestamp: Date.now() };
               deferred.resolve(self.namespaces[options.sourceType]);
               if (notifyForRefresh) {
                 huePubSub.publish('context.catalog.namespaces.refreshed', options.sourceType);
@@ -171,7 +197,15 @@ var ContextCatalog = (function () {
           } else {
             deferred.reject();
           }
-        });
+        };
+
+        if (!window.HAS_MULTI_CLUSTER) {
+          var response = { status: 0 };
+          response[options.sourceType] = DEFAULT_NAMESPACES;
+          handleNamespacesResponse(response);
+        } else {
+          ApiHelper.getInstance().fetchContextNamespaces(options).done(handleNamespacesResponse);
+        }
       };
 
       if (!options.clearCache) {
@@ -213,7 +247,7 @@ var ContextCatalog = (function () {
       var deferred = $.Deferred();
       self.computePromises[options.sourceType] = deferred.promise();
 
-      ApiHelper.getInstance().fetchContextComputes(options).done(function (computes) {
+      var handleComputesResponse = function (computes) {
         if (computes[options.sourceType]) {
           var computes = computes[options.sourceType];
           if (computes) {
@@ -226,7 +260,15 @@ var ContextCatalog = (function () {
         } else {
           deferred.reject();
         }
-      });
+      };
+
+      if (!window.HAS_MULTI_CLUSTER) {
+        var response = { status: 0 };
+        response[options.sourceType] = DEFAULT_COMPUTES;
+        handleComputesResponse(response);
+      } else {
+        ApiHelper.getInstance().fetchContextComputes(options).done(handleComputesResponse);
+      }
 
       return self.computePromises[options.sourceType];
     };
@@ -252,14 +294,22 @@ var ContextCatalog = (function () {
       var deferred = $.Deferred();
       self.clusterPromises[options.sourceType] = deferred.promise();
 
-      ApiHelper.getInstance().fetchContextClusters(options).done(function (clusters) {
+      var handleClustersResponse = function (clusters) {
         if (clusters && clusters[options.sourceType]) {
           self.clusters[options.sourceType] = clusters[options.sourceType];
           deferred.resolve(self.clusters[options.sourceType])
         } else {
           deferred.reject();
         }
-      });
+      };
+
+      if (!window.HAS_MULTI_CLUSTER) {
+        var response = { status: 0 };
+        response[options.sourceType] = DEFAULT_CLUSTERS;
+        handleClustersResponse(response);
+      } else {
+        ApiHelper.getInstance().fetchContextClusters(options).done(handleClustersResponse);
+      }
 
       return self.clusterPromises[options.sourceType];
     };
