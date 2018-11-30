@@ -973,7 +973,7 @@ var ApiHelper = (function () {
       }
     };
 
-    generateFakeData(data, options.startTime, options.endTime, options.points)
+    generateFakeData(data, options.startTime, options.endTime, options.points);
 
     return $.Deferred().resolve(data).promise();
   };
