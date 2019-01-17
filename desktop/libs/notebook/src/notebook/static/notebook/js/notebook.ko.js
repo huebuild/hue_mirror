@@ -20,8 +20,8 @@ var EditorViewModel = (function() {
     ignore: [
       'ace', 'aceMode', 'autocompleter', 'availableDatabases', 'availableSnippets', 'avoidClosing', 'canWrite',
       'cleanedDateTimeMeta', 'cleanedMeta', 'cleanedNumericMeta', 'cleanedStringMeta', 'dependents', 'errorLoadingQueries',
-      'hasProperties', 'history', 'images', 'inFocus', 'queries', 'saveResultsModalVisible', 'selectedStatement',
-      'snippetImage', 'user', 'positionStatement', 'lastExecutedStatement', 'downloadResultViewModel'
+      'hasProperties', 'history', 'images', 'inFocus', 'notebook', 'queries', 'saveResultsModalVisible', 'selectedStatement',
+      'snippetImage', 'user','vm', 'positionStatement', 'lastExecutedStatement', 'downloadResultViewModel'
     ]
   };
 
@@ -210,26 +210,37 @@ var EditorViewModel = (function() {
           handle: self.handle
       };
     };
+  };
 
-    self.clear = function () {
-      self.fetchedOnce(false);
-      self.hasMore(false);
-      self.meta.removeAll();
-      self.data.removeAll();
-      self.images.removeAll();
-      self.logs('');
-      self.handle({ // Keep multiquery indexing
-          has_more_statements: self.handle()['has_more_statements'],
-          statement_id: self.handle()['statement_id'],
-          statements_count: self.handle()['statements_count'],
-          previous_statement_hash: self.handle()['previous_statement_hash'],
-      });
-      self.startTime(new Date());
-      self.endTime(new Date());
-      self.explanation('');
-      self.logLines = 0;
-      self.rows(null);
-    };
+  Result.prototype.clear = function () {
+    var self = this;
+    self.fetchedOnce(false);
+    self.hasMore(false);
+    self.meta.removeAll();
+    self.data.removeAll();
+    self.images.removeAll();
+    self.logs('');
+    self.handle({ // Keep multiquery indexing
+      has_more_statements: self.handle()['has_more_statements'],
+      statement_id: self.handle()['statement_id'],
+      statements_count: self.handle()['statements_count'],
+      previous_statement_hash: self.handle()['previous_statement_hash'],
+    });
+    self.startTime(new Date());
+    self.endTime(new Date());
+    self.explanation('');
+    self.logLines = 0;
+    self.rows(null);
+    self.statement_range ({
+      start: {
+        row: 0,
+        column: 0
+      },
+      end: {
+        row: 0,
+        column: 0
+      }
+    });
   };
 
   var getDefaultSnippetProperties = function (snippetType) {
@@ -312,6 +323,9 @@ var EditorViewModel = (function() {
   var Snippet = function (vm, notebook, snippet) {
     var self = this;
 
+    self.notebook = notebook;
+    self.vm = vm;
+
     self.id = ko.observable(typeof snippet.id != "undefined" && snippet.id != null ? snippet.id : UUID());
     self.name = ko.observable(typeof snippet.name != "undefined" && snippet.name != null ? snippet.name : '');
     self.type = ko.observable(typeof snippet.type != "undefined" && snippet.type != null ? snippet.type : 'hive');
@@ -320,9 +334,9 @@ var EditorViewModel = (function() {
     });
 
     self.isBatchable = ko.computed(function() {
-      return self.type() == 'hive'
-          || self.type() == 'impala'
-          || $.grep(vm.availableLanguages, function(language) { return language.type == self.type() && language.interface == 'oozie'; }).length > 0;
+      return self.type() === 'hive'
+          || self.type() === 'impala'
+          || $.grep(self.vm.availableLanguages, function(language) { return language.type === self.type() && language.interface === 'oozie'; }).length > 0;
     });
 
     self.autocompleteSettings = {
@@ -330,14 +344,14 @@ var EditorViewModel = (function() {
     };
 
     // Ace stuff
-    self.aceCursorPosition = ko.observable(notebook.isHistory() ? snippet.aceCursorPosition : null);
+    self.aceCursorPosition = ko.observable(self.notebook.isHistory() ? snippet.aceCursorPosition : null);
 
     var aceEditor = null;
 
     self.ace = function (newVal) {
       if (newVal) {
         aceEditor = newVal;
-        if (!notebook.isPresentationMode()) {
+        if (!self.notebook.isPresentationMode()) {
           aceEditor.focus();
         }
       }
@@ -355,7 +369,7 @@ var EditorViewModel = (function() {
       return self.showOptimizer() ? self.aceWarningsHolder() : [];
     });
 
-    self.availableSnippets = vm.availableSnippets();
+    self.availableSnippets = self.vm.availableSnippets();
     self.inFocus = ko.observable(false);
 
     self.inFocus.subscribe(function (newValue) {
@@ -364,10 +378,10 @@ var EditorViewModel = (function() {
       }
     });
 
-    self.editorMode = vm.editorMode;
+    self.editorMode = self.vm.editorMode;
 
     self.getAceMode = function() {
-      return vm.getSnippetViewSettings(self.type()).aceMode;
+      return self.vm.getSnippetViewSettings(self.type()).aceMode;
     };
 
     self.dbSelectionVisible = ko.observable(false);
@@ -375,15 +389,15 @@ var EditorViewModel = (function() {
     self.showExecutionAnalysis = ko.observable(false);
 
     self.isSqlDialect = ko.pureComputed(function () {
-      return vm.getSnippetViewSettings(self.type()).sqlDialect;
+      return self.vm.getSnippetViewSettings(self.type()).sqlDialect;
     });
 
     self.getPlaceHolder = function() {
-      return vm.getSnippetViewSettings(self.type()).placeHolder;
+      return self.vm.getSnippetViewSettings(self.type()).placeHolder;
     };
 
     self.getApiHelper = function() {
-      return ApiHelper.getInstance(vm);
+      return ApiHelper.getInstance(self.vm);
     };
 
     // namespace and compute might be initialized as empty object {}
@@ -463,8 +477,8 @@ var EditorViewModel = (function() {
     self.loadingQueries = ko.observable(false);
 
     self.queriesHasErrors = ko.observable(false);
-    self.queriesCurrentPage = ko.observable(vm.selectedNotebook() && vm.selectedNotebook().snippets().length > 0 ? vm.selectedNotebook().snippets()[0].queriesCurrentPage() : 1);
-    self.queriesTotalPages = ko.observable(vm.selectedNotebook() && vm.selectedNotebook().snippets().length > 0 ? vm.selectedNotebook().snippets()[0].queriesTotalPages() : 1);
+    self.queriesCurrentPage = ko.observable(self.vm.selectedNotebook() && self.vm.selectedNotebook().snippets().length > 0 ? self.vm.selectedNotebook().snippets()[0].queriesCurrentPage() : 1);
+    self.queriesTotalPages = ko.observable(self.vm.selectedNotebook() && self.vm.selectedNotebook().snippets().length > 0 ? self.vm.selectedNotebook().snippets()[0].queriesTotalPages() : 1);
     self.queries = ko.observableArray([]);
 
     self.queriesFilter = ko.observable('');
@@ -529,7 +543,7 @@ var EditorViewModel = (function() {
       if (source !== self.type()) {
         huePubSub.publish('assist.set.source', self.type());
       }
-    }, vm.huePubSubId);
+    }, self.vm.huePubSubId);
 
     huePubSub.publish('assist.get.source');
 
@@ -555,7 +569,7 @@ var EditorViewModel = (function() {
 
     self.statementType = ko.observable(typeof snippet.statementType != "undefined" && snippet.statementType != null ? snippet.statementType : 'text');
     self.statementTypes = ko.observableArray(['text', 'file']); // Maybe computed later for Spark
-    if (! vm.editorMode()) {
+    if (! self.vm.editorMode()) {
       self.statementTypes.push('document');
     }
     self.statementPath = ko.observable(typeof snippet.statementPath != "undefined" && snippet.statementPath != null ? snippet.statementPath : '');
@@ -566,10 +580,10 @@ var EditorViewModel = (function() {
     self.getExternalStatement = function() {
       self.externalStatementLoaded(false);
       $.post("/notebook/api/get_external_statement", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
       }, function(data) {
-        if (data.status == 0) {
+        if (data.status === 0) {
           self.externalStatementLoaded(true);
           self.statement_raw(data.statement);
           self.ace().setValue(self.statement_raw(), 1);
@@ -617,8 +631,8 @@ var EditorViewModel = (function() {
         } else {
           self.statementsList([]);
         }
-        if (!notebook.isPresentationModeInitialized()) {
-          if (notebook.isPresentationModeDefault()) {
+        if (!self.notebook.isPresentationModeInitialized()) {
+          if (self.notebook.isPresentationModeDefault()) {
             // When switching to presentation mode, the snippet in non presentation mode cannot get status notification.
             // On initiailization, status is set to loading and does not get updated, because we moved to presentation mode.
             self.status('ready');
@@ -627,12 +641,12 @@ var EditorViewModel = (function() {
           // When presentation mode is default, we cannot change before statementsList has been calculated.
           // Cleaner implementation would be to make toggleEditorMode statementsList asynchronous
           // However this is currently impossible due to delete _notebook.presentationSnippets()[key];
-          notebook.isPresentationModeInitialized(true);
-          notebook.isPresentationMode(notebook.isPresentationModeDefault());
+          self.notebook.isPresentationModeInitialized(true);
+          self.notebook.isPresentationMode(self.notebook.isPresentationModeDefault());
         }
       }
 
-    }, vm.huePubSubId);
+    }, self.vm.huePubSubId);
 
     self.aceSize = ko.observable(typeof snippet.aceSize != "undefined" && snippet.aceSize != null ? snippet.aceSize : 100);
     // self.statement_raw.extend({ rateLimit: 150 }); // Should prevent lag from typing but currently send the old query when using the key shortcut
@@ -645,7 +659,7 @@ var EditorViewModel = (function() {
     });
 
     self.viewSettings = ko.computed(function() {
-      return vm.getSnippetViewSettings(self.type());
+      return self.vm.getSnippetViewSettings(self.type());
     });
 
     var previousProperties = {};
@@ -945,7 +959,7 @@ var EditorViewModel = (function() {
     self.showGrid = ko.observable(typeof snippet.showGrid != "undefined" && snippet.showGrid != null ? snippet.showGrid : true);
     self.showChart = ko.observable(typeof snippet.showChart != "undefined" && snippet.showChart != null ? snippet.showChart : false);
     var defaultShowLogs = true;
-    if (vm.editorMode() && $.totalStorage('hue.editor.showLogs')) {
+    if (self.vm.editorMode() && $.totalStorage('hue.editor.showLogs')) {
       defaultShowLogs = $.totalStorage('hue.editor.showLogs');
     }
     self.showLogs = ko.observable(typeof snippet.showLogs !== "undefined" && snippet.showLogs != null ? snippet.showLogs : defaultShowLogs);
@@ -1056,7 +1070,7 @@ var EditorViewModel = (function() {
       if (val) {
         self.getLogs();
       }
-      if (vm.editorMode()) {
+      if (self.vm.editorMode()) {
         $.totalStorage('hue.editor.showLogs', val);
       }
     });
@@ -1239,7 +1253,7 @@ var EditorViewModel = (function() {
       }
     });
 
-    if (HAS_OPTIMIZER && ! vm.isNotificationManager()) {
+    if (HAS_OPTIMIZER && ! self.vm.isNotificationManager()) {
       var lastComplexityRequest;
       var lastCheckedComplexityStatement;
       var knownResponses = [];
@@ -1247,7 +1261,7 @@ var EditorViewModel = (function() {
       self.delayedStatement = ko.pureComputed(self.statement).extend({ rateLimit: { method: "notifyWhenChangesStop", timeout: 2000 } });
 
       var handleRiskResponse = function(data) {
-        if (data.status == 0) {
+        if (data.status === 0) {
           self.hasSuggestion('');
           self.complexity(data.query_complexity);
         } else {
@@ -1331,7 +1345,7 @@ var EditorViewModel = (function() {
             url: '/notebook/api/optimizer/statement/risk',
             timeout: 30000, // 30 seconds
             data: {
-              notebook: ko.mapping.toJSON(notebook.getContext()),
+              notebook: ko.mapping.toJSON(self.notebook.getContext()),
               snippet: ko.mapping.toJSON(self.getContext())
             },
             success: function (data) {
@@ -1364,35 +1378,35 @@ var EditorViewModel = (function() {
     }
 
     self._ajaxError = function (data, callback) {
-      if (data.status == -2) { // Session expired
-        var existingSession = notebook.getSession(self.type());
+      if (data.status === -2) { // Session expired
+        var existingSession = self.notebook.getSession(self.type());
         if (existingSession) {
-          notebook.restartSession(existingSession, callback);
+          self.notebook.restartSession(existingSession, callback);
         } else {
-          notebook.createSession(new Session(vm, {'type': self.type()}), callback);
+          self.notebook.createSession(new Session(self.vm, {'type': self.type()}), callback);
         }
-      } else if (data.status == -3) { // Statement expired
+      } else if (data.status === -3) { // Statement expired
         self.status('expired');
         if (data.message) {
           self.errors.push({message: data.message, help: null, line: null, col: null});
           huePubSub.publish('editor.snippet.result.normal', self);
         }
-      } else if (data.status == -4) { // Operation timed out
-        notebook.retryModalCancel = function () {
+      } else if (data.status === -4) { // Operation timed out
+        self.notebook.retryModalCancel = function () {
           self.status('failed');
           huePubSub.publish('hide.retry.modal');
         };
-        notebook.retryModalConfirm = function () {
+        self.notebook.retryModalConfirm = function () {
           if (callback) {
             callback();
           }
           huePubSub.publish('hide.retry.modal');
         };
         huePubSub.publish('show.retry.modal');
-      } else if (data.status == 401) { // Auth required
+      } else if (data.status === 401) { // Auth required
         self.status('expired');
         $(document).trigger("showAuthModal", {'type': self.type(), 'callback': self.execute});
-      } else if (data.status == 1 || data.status == -1) {
+      } else if (data.status === 1 || data.status === -1) {
         self.status('failed');
         var match = ERROR_REGEX.exec(data.message);
         if (match) {
@@ -1454,193 +1468,19 @@ var EditorViewModel = (function() {
 
     var longOperationTimeout = -1;
 
-    function startLongOperationTimeout() {
+    self.startLongOperationTimeout = function () {
       longOperationTimeout = window.setTimeout(function () {
-        self.showLongOperationWarning(true);
+        if (!self.showLongOperationWarning()) {
+          self.showLongOperationWarning(true);
+        }
       }, 2000);
-    }
-
-    function stopLongOperationTimeout() {
-      window.clearTimeout(longOperationTimeout);
-      self.showLongOperationWarning(false);
-    }
-
-    self.execute = function (automaticallyTriggered) {
-      var now = (new Date()).getTime(); // We don't allow fast clicks
-      if (!automaticallyTriggered && (self.status() === 'running' || self.status() === 'loading')) { // Do not cancel statements that are parts of a set of steps to execute (e.g. import). Only cancel statements as requested by user
-        self.cancel();
-      } else if (now - self.lastExecuted() < 1000 || ! self.isReady()) {
-        return;
-      }
-
-      if (self.type() === 'impala') {
-        self.showExecutionAnalysis(false);
-        huePubSub.publish('editor.clear.execution.analysis');
-      }
-
-      self.status('running');
-      self.statusForButtons('executing');
-
-      if (self.isSqlDialect()) {
-        huePubSub.publish('editor.refresh.statement.locations', self);
-      }
-
-      if (self.ace()) {
-        huePubSub.publish('ace.set.autoexpand', { autoExpand: false, snippet: self });
-        var selectionRange = self.ace().getSelectionRange();
-        self.lastAceSelectionRowOffset(Math.min(selectionRange.start.row, selectionRange.end.row));
-      }
-
-      self.previousChartOptions = vm._getPreviousChartOptions(self);
-      $(document).trigger("executeStarted", {vm: vm, snippet: self});
-      self.lastExecuted(now);
-      $(".jHueNotify").remove();
-      hueAnalytics.log('notebook', 'execute/' + self.type());
-
-      notebook.forceHistoryInitialHeight(true);
-
-      if (self.result.handle()) {
-        self.close();
-      }
-
-      if (self.isSqlDialect() && self.positionStatement()) {
-        self.lastExecutedStatement(self.positionStatement());
-      } else {
-        self.lastExecutedStatement(null);
-      }
-
-      self.errors([]);
-      huePubSub.publish('editor.clear.highlighted.errors', self.ace());
-      self.result.clear();
-      self.progress(0);
-      self.jobs([]);
-      self.result.logs('');
-      self.result.statement_range ({
-        start: {
-          row: 0,
-          column: 0
-        },
-        end: {
-          row: 0,
-          column: 0
-        }
-      });
-      notebook.historyCurrentPage(1);
-
-      // TODO: rename startLongOperationTimeout to startBlockingOperationTimeout
-      // TODO: stop blocking operation UI if there is one
-      // TODO: offer to stop blocking submit or fetch operation UI if there is one (add a new call to function for cancelBlockingOperation)
-      // TODO: stop current blocking operation if there is one
-      // TODO: handle jquery.dataTables.1.8.2.min.js:150 Uncaught TypeError: Cannot read property 'asSorting' of undefined on some cancels
-      // TODO: we should cancel blocking operation when leaving notebook (similar to unload())
-      // TODO: we should test when we go back to a query history of a blocking operation that we left
-      startLongOperationTimeout();
-
-      self.currentQueryTab('queryHistory');
-
-      self.executingBlockingOperation = $.post("/notebook/api/execute/" + self.type(), {
-        notebook: vm.editorMode() ? ko.mapping.toJSON(notebook, NOTEBOOK_MAPPING) : ko.mapping.toJSON(notebook.getContext()),
-        snippet: ko.mapping.toJSON(self.getContext())
-      }, function (data) {
-        self.statusForButtons('executed');
-        huePubSub.publish('ace.set.autoexpand', { autoExpand: true, snippet: self });
-        stopLongOperationTimeout();
-
-        if (vm.editorMode() && data.history_id) {
-          if (! vm.isNotificationManager()) {
-            var url = '/notebook/editor' + (vm.isMobile() ? '_m' : '') + '?editor=' + data.history_id;
-            if (vm.isHue4()){
-              url = vm.URLS.hue4 + '?editor=' + data.history_id;
-            }
-            vm.changeURL(url);
-          }
-          notebook.id(data.history_id);
-          notebook.uuid(data.history_uuid);
-          notebook.isHistory(true);
-          notebook.parentSavedQueryUuid(data.history_parent_uuid);
-        }
-
-        if (data.status === 0) {
-          self.result.handle(data.handle);
-          self.result.hasResultset(data.handle.has_result_set);
-          if (data.handle.sync) {
-            self.loadData(data.result, 100);
-            self.status('available');
-            self.progress(100);
-            self.result.endTime(new Date());
-          } else {
-            if (! notebook.unloaded()) {
-              self.checkStatus();
-            }
-          }
-          if (vm.isOptimizerEnabled()) {
-            huePubSub.publish('editor.upload.query', data.history_id);
-          }
-        } else {
-          self._ajaxError(data, self.execute);
-          notebook.isExecutingAll(false);
-        }
-
-        if (data.handle) {
-          if (vm.editorMode()) {
-            if (vm.isNotificationManager()) { // Update task status
-              var tasks = $.grep(notebook.history(), function(row) { return row.uuid() == notebook.uuid()});
-              if (tasks.length === 1) {
-                tasks[0].status(self.status());
-                self.result.logs(data.message);
-              }
-            } else {
-              notebook.history.unshift(
-                notebook._makeHistoryRecord(
-                  url,
-                  data.handle.statement,
-                  self.lastExecuted(),
-                  self.status(),
-                  notebook.name(),
-                  notebook.uuid()
-                )
-              );
-            }
-          }
-
-          if (data.handle.statements_count != null) {
-            self.result.statements_count(data.handle.statements_count);
-            self.result.statement_id(data.handle.statement_id);
-            self.result.previous_statement_hash(data.previous_statement_hash);
-
-            if (data.handle.statements_count > 1 && data.handle.start != null && data.handle.end != null) {
-              self.result.statement_range({
-                start: data.handle.start,
-                end: data.handle.end
-              });
-            }
-          }
-        }
-      }).fail(function (xhr, textStatus, errorThrown) {
-        if (self.statusForButtons() != 'canceled' && xhr.status !== 502) { // No error when manually canceled
-          $(document).trigger("error", xhr.responseText);
-        }
-        self.status('failed');
-        self.statusForButtons('executed');
-      }).always(function () {
-        self.executingBlockingOperation = null;
-      });
     };
 
-    self.reexecute = function () {
-      self.result.handle()['statement_id'] = 0;
-      self.result.handle()['start'] = {
-        row: 0,
-        column: 0
-      };
-      self.result.handle()['end'] = {
-        row: 0,
-        column: 0
-      };
-      self.result.handle()['has_more_statements'] = false;
-      self.result.handle()['previous_statement_hash'] = '';
-
-      self.execute();
+    self.stopLongOperationTimeout = function () {
+      window.clearTimeout(longOperationTimeout);
+      if (self.showLongOperationWarning()) {
+        self.showLongOperationWarning(false);
+      }
     };
 
     self.formatEnabled = ko.pureComputed(function () {
@@ -1675,7 +1515,7 @@ var EditorViewModel = (function() {
     self.explain = function () {
       hueAnalytics.log('notebook', 'explain');
 
-      if (self.statement() == '' || self.status() == 'running' || self.status() === 'loading') {
+      if (self.statement() === '' || self.status() === 'running' || self.status() === 'loading') {
         return;
       }
 
@@ -1685,7 +1525,7 @@ var EditorViewModel = (function() {
       self.status('ready');
 
       $.post("/notebook/api/explain", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
       }, function(data) {
         if (data.status == 0) {
@@ -1711,12 +1551,12 @@ var EditorViewModel = (function() {
       self.getApiHelper().cancelActiveRequest(lastCompatibilityRequest);
 
       hueAnalytics.log('notebook', 'compatibility');
-      self.compatibilityCheckRunning(targetPlatform != self.type());
+      self.compatibilityCheckRunning(targetPlatform !== self.type());
       self.hasSuggestion(null);
       var positionStatement = self.positionStatement();
 
       lastCompatibilityRequest = $.post("/notebook/api/optimizer/statement/compatibility", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext()),
         sourcePlatform: self.compatibilitySourcePlatform().value,
         targetPlatform: self.compatibilityTargetPlatform().value
@@ -1781,7 +1621,7 @@ var EditorViewModel = (function() {
         huePubSub.publish('editor.update.execution.analysis', {
           analysisPossible: true,
           compute: self.compute(),
-          queryId: notebook.getContext().id(),
+          queryId: self.notebook.getContext().id(),
           name: self.jobs()[0] && self.jobs()[0].name
         });
       } else {
@@ -1794,16 +1634,16 @@ var EditorViewModel = (function() {
     self.fetchResultData = function (rows, startOver) {
       if (! self.isFetchingData) {
         if (self.status() === 'available') {
-          startLongOperationTimeout();
+          self.startLongOperationTimeout();
           self.isFetchingData = true;
           hueAnalytics.log('notebook', 'fetchResult/' + rows + '/' + startOver);
           $.post("/notebook/api/fetch_result_data", {
-            notebook: ko.mapping.toJSON(notebook.getContext()),
+            notebook: ko.mapping.toJSON(self.notebook.getContext()),
             snippet: ko.mapping.toJSON(self.getContext()),
             rows: rows,
             startOver: startOver
           }, function (data) {
-            stopLongOperationTimeout();
+            self.stopLongOperationTimeout();
             data = JSON.bigdataParse(data);
             if (data.status === 0) {
               self.showExecutionAnalysis(true);
@@ -1871,14 +1711,14 @@ var EditorViewModel = (function() {
         setTimeout(function () {
           self.fetchResultData(rows, false);
         }, 500);
-      } else if (! vm.editorMode() && ! notebook.isPresentationMode() && notebook.snippets()[notebook.snippets().length - 1] == self) {
-        notebook.newSnippet();
+      } else if (! self.vm.editorMode() && ! self.notebook.isPresentationMode() && self.notebook.snippets()[self.notebook.snippets().length - 1] === self) {
+        self.notebook.newSnippet();
       }
     };
 
     self.fetchResultMetadata = function () {
       $.post("/notebook/api/fetch_result_metadata", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
       }, function (data) {
         if (data.status == 0) {
@@ -1896,19 +1736,19 @@ var EditorViewModel = (function() {
 
     self.fetchResultSize = function(n, query_id) {
       $.post("/notebook/api/fetch_result_size", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
       }, function (data) {
-        if (query_id == notebook.id()) { // If still on the same result
-          if (data.status == 0) {
+        if (query_id === self.notebook.id()) { // If still on the same result
+          if (data.status === 0) {
             if (data.result.rows != null) {
               self.result.rows(data.result.rows);
-            } else if (self.type() == 'impala' && n > 0) {
+            } else if (self.type() === 'impala' && n > 0) {
               setTimeout(function () {
                 self.fetchResultSize(n - 1, query_id);
               }, 1000);
             }
-          } else if (data.status == 5) {
+          } else if (data.status === 5) {
             // No supported yet for this snippet
           } else {
             //$(document).trigger("error", data.message);
@@ -1921,10 +1761,10 @@ var EditorViewModel = (function() {
 
     self.checkStatus = function () {
       $.post("/notebook/api/check_status", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
       }, function (data) {
-        if (self.statusForButtons() == 'canceling' || self.status() == 'canceled') {
+        if (self.statusForButtons() === 'canceling' || self.status() === 'canceled') {
           // Query was canceled in the meantime, do nothing
         } else {
           self.result.endTime(new Date());
@@ -1932,9 +1772,9 @@ var EditorViewModel = (function() {
           if (data.status === 0) {
             self.status(data.query_status.status);
 
-            if (self.status() == 'running' || self.status() == 'starting' || self.status() == 'waiting') {
+            if (self.status() === 'running' || self.status() === 'starting' || self.status() === 'waiting') {
               var delay = self.result.executionTime() > 45000 ? 5000 : 1000; // 5s if more than 45s
-              if (! notebook.unloaded()) {
+              if (! self.notebook.unloaded()) {
                 self.checkStatusTimeout = setTimeout(self.checkStatus, delay);
               }
             } else if (self.status() === 'available') {
@@ -1942,7 +1782,7 @@ var EditorViewModel = (function() {
               self.progress(100);
               if (self.isSqlDialect()) {
                 if (self.result.handle().has_result_set) {
-                  var _query_id = notebook.id();
+                  var _query_id = self.notebook.id();
                   setTimeout(function () { // Delay until we get IMPALA-5555
                     self.fetchResultSize(10, _query_id);
                   }, 2000);
@@ -1956,26 +1796,26 @@ var EditorViewModel = (function() {
                   }
                 }
               }
-              if (notebook.isExecutingAll()) {
-                notebook.executingAllIndex(notebook.executingAllIndex() + 1);
-                if (notebook.executingAllIndex() < notebook.snippets().length) {
-                  notebook.snippets()[notebook.executingAllIndex()].execute();
+              if (self.notebook.isExecutingAll()) {
+                self.notebook.executingAllIndex(self.notebook.executingAllIndex() + 1);
+                if (self.notebook.executingAllIndex() < self.notebook.snippets().length) {
+                  self.notebook.snippets()[self.notebook.executingAllIndex()].execute();
                 } else {
-                  notebook.isExecutingAll(false);
+                  self.notebook.isExecutingAll(false);
                 }
               }
-              if (! self.result.handle().has_more_statements && vm.successUrl()) {
-                window.location.href = vm.successUrl(); // Not used anymore in Hue 4
+              if (! self.result.handle().has_more_statements && self.vm.successUrl()) {
+                window.location.href = self.vm.successUrl(); // Not used anymore in Hue 4
               }
             } else if (self.status() === 'success') {
               self.progress(99);
             }
           } else if (data.status === -3) {
             self.status('expired');
-            notebook.isExecutingAll(false);
+            self.notebook.isExecutingAll(false);
           } else {
             self._ajaxError(data);
-            notebook.isExecutingAll(false);
+            self.notebook.isExecutingAll(false);
           }
           self.getLogs(); // Need to execute at the end, because updating the status impacts log progress results
         }
@@ -1984,7 +1824,7 @@ var EditorViewModel = (function() {
           $(document).trigger("error", xhr.responseText || textStatus);
         }
         self.status('failed');
-        notebook.isExecutingAll(false);
+        self.notebook.isExecutingAll(false);
       });
     };
 
@@ -1996,75 +1836,9 @@ var EditorViewModel = (function() {
 
     self.isCanceling = ko.observable(false);
 
-    self.cancel = function () {
-      self.isCanceling(true);
-      if (self.checkStatusTimeout != null) {
-        clearTimeout(self.checkStatusTimeout);
-        self.checkStatusTimeout = null;
-      }
-      hueAnalytics.log('notebook', 'cancel');
-
-      if ($.isEmptyObject(self.result.handle())) { // Query was not even submitted yet
-        if (self.executingBlockingOperation != null) {
-          self.executingBlockingOperation.abort();
-          self.executingBlockingOperation = null;
-        }
-        self.statusForButtons('canceled');
-        self.status('failed');
-        self.isCanceling(false);
-        notebook.isExecutingAll(false);
-      } else {
-        self.statusForButtons('canceling');
-        $.post("/notebook/api/cancel_statement", {
-          notebook: ko.mapping.toJSON(notebook.getContext()),
-          snippet: ko.mapping.toJSON(self.getContext())
-        }, function (data) {
-          self.statusForButtons('canceled');
-          if (data.status == 0) {
-            self.status('canceled');
-            notebook.isExecutingAll(false);
-          } else {
-            self._ajaxError(data);
-          }
-        }).fail(function (xhr, textStatus, errorThrown) {
-          if (xhr.status !== 502) {
-            $(document).trigger("error", xhr.responseText);
-          }
-          self.statusForButtons('canceled');
-          self.status('failed');
-          notebook.isExecutingAll(false);
-        }).always(function (){
-          self.isCanceling(false);
-        });
-      }
-    };
-
-    self.close = function () {
-      if (self.checkStatusTimeout != null) {
-        clearTimeout(self.checkStatusTimeout);
-        self.checkStatusTimeout = null;
-      }
-
-      $.post("/notebook/api/close_statement", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
-        snippet: ko.mapping.toJSON(self.getContext())
-      }, function (data) {
-        if (data.status == 0) {
-          // self.status('closed'); // Keep as 'running' as currently it happens before running a new query
-        } else {
-          // self._ajaxError(data);
-        }
-      }).fail(function (xhr, textStatus, errorThrown) {
-        if (xhr.status !== 502) {
-          // $(document).trigger("error", xhr.responseText);
-        }
-        // self.status('failed'); // Can conflict with slow close and new query execution
-      });
-    };
-
     self.getLogs = function () {
       $.post("/notebook/api/get_logs", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext()),
         from: self.result.logLines,
         jobs: ko.mapping.toJSON(self.jobs, { ignore: ['percentJob'] }),
@@ -2220,7 +1994,7 @@ var EditorViewModel = (function() {
       hueAnalytics.log('notebook', 'get_query_similarity');
 
       $.post("/notebook/api/optimizer/statement/similarity", {
-        notebook: ko.mapping.toJSON(notebook.getContext()),
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext()),
         sourcePlatform: self.type()
       }, function(data) {
@@ -2234,22 +2008,22 @@ var EditorViewModel = (function() {
 
     self.autocompleter = new Autocompleter({
       snippet: self,
-      user: vm.user,
+      user: self.vm.user,
       optEnabled: false,
-      timeout: vm.autocompleteTimeout,
-      useNewAutocompleter: vm.useNewAutocompleter
+      timeout: self.vm.autocompleteTimeout,
+      useNewAutocompleter: self.vm.useNewAutocompleter
     });
 
     self.init = function () {
-      if ((self.status() == 'running' || self.status() == 'available') && notebook.isHistory()) {
+      if ((self.status() === 'running' || self.status() === 'available') && self.notebook.isHistory()) {
         self.checkStatus();
       }
-      else if (self.status() == 'loading') {
+      else if (self.status() === 'loading') {
         self.status('failed');
         self.progress(0);
         self.jobs([]);
       }
-      else if (self.status() == 'ready-execute') {
+      else if (self.status() === 'ready-execute') {
         self.execute();
       }
     };
@@ -2263,6 +2037,247 @@ var EditorViewModel = (function() {
       }
       return true;
     };
+  };
+
+  Snippet.prototype.cancel = function (callback) {
+    var self  = this;
+    hueAnalytics.log('notebook', 'cancel');
+
+    self.isCanceling(true);
+    if (self.checkStatusTimeout != null) {
+      window.clearTimeout(self.checkStatusTimeout);
+      self.checkStatusTimeout = null;
+    }
+
+    if ($.isEmptyObject(self.result.handle())) { // Query was not submitted yet or is currently being submitted
+      if (self.executingBlockingOperation != null) {
+        self.executingBlockingOperation.abort();
+        self.executingBlockingOperation = null;
+      }
+      self.statusForButtons('canceled');
+      self.status('failed');
+      self.isCanceling(false);
+      self.notebook.isExecutingAll(false);
+      if (callback) {
+        callback();
+      }
+    } else {
+      self.statusForButtons('canceling');
+      $.post("/notebook/api/cancel_statement", {
+        notebook: ko.mapping.toJSON(self.notebook.getContext()),
+        snippet: ko.mapping.toJSON(self.getContext())
+      }, function (data) {
+        self.statusForButtons('canceled');
+        if (data.status === 0) {
+          self.status('canceled');
+          self.notebook.isExecutingAll(false);
+        } else {
+          self._ajaxError(data);
+        }
+      }).fail(function (xhr) {
+        if (xhr.status !== 502) {
+          $(document).trigger("error", xhr.responseText);
+        }
+        self.statusForButtons('canceled');
+        self.status('failed');
+        self.notebook.isExecutingAll(false);
+      }).always(function (){
+        self.isCanceling(false);
+        if (callback) {
+          callback();
+        }
+      });
+    }
+  };
+
+  Snippet.prototype.close = function () {
+    var self = this;
+    if (self.checkStatusTimeout != null) {
+      window.clearTimeout(self.checkStatusTimeout);
+      self.checkStatusTimeout = null;
+    }
+
+    $.post("/notebook/api/close_statement", {
+      notebook: ko.mapping.toJSON(self.notebook.getContext()),
+      snippet: ko.mapping.toJSON(self.getContext())
+    });
+  };
+  
+  Snippet.prototype.execute = function (automaticallyTriggered) {
+    var self = this;
+
+    // Prevent fast click
+    var now = Date.now();
+    if (now - self.lastExecuted() < 1000 || !self.isReady()) {
+      return;
+    }
+
+    hueAnalytics.log('notebook', 'execute/' + self.type());
+
+    var cancelRunning = $.Deferred();
+    if (!automaticallyTriggered && (self.status() === 'running' || self.status() === 'loading')) {
+      self.cancel(cancelRunning.resolve);
+    } else {
+      cancelRunning.resolve();
+    }
+
+    if (self.result.handle()) {
+      // Fire and forget for now
+      self.close();
+    }
+
+    cancelRunning.done(function () {
+      self.lastExecuted(now);
+      self.status('running');
+      self.statusForButtons('executing');
+      self.previousChartOptions = self.vm.getPreviousChartOptions(self);
+      self.notebook.forceHistoryInitialHeight(true);
+      huePubSub.publish('editor.execution.started', { vm: self.vm, snippet: self });
+      $(".jHueNotify").remove();
+      self.errors([]);
+      huePubSub.publish('editor.clear.highlighted.errors', self.ace());
+      self.result.clear();
+      self.progress(0);
+      self.jobs([]);
+      self.notebook.historyCurrentPage(1);
+      self.currentQueryTab('queryHistory');
+
+      if (self.type() === 'impala') {
+        self.showExecutionAnalysis(false);
+        huePubSub.publish('editor.clear.execution.analysis');
+      }
+
+      if (self.isSqlDialect()) {
+        huePubSub.publish('editor.refresh.statement.locations', self);
+      }
+
+      if (self.ace()) {
+        huePubSub.publish('ace.set.autoexpand', { autoExpand: false, snippet: self });
+        var selectionRange = self.ace().getSelectionRange();
+        self.lastAceSelectionRowOffset(Math.min(selectionRange.start.row, selectionRange.end.row));
+      }
+
+      if (self.isSqlDialect() && self.positionStatement()) {
+        self.lastExecutedStatement(self.positionStatement());
+      } else {
+        self.lastExecutedStatement(null);
+      }
+
+      // TODO: rename startLongOperationTimeout to startBlockingOperationTimeout
+      // TODO: stop blocking operation UI if there is one
+      // TODO: offer to stop blocking submit or fetch operation UI if there is one (add a new call to function for cancelBlockingOperation)
+      // TODO: stop current blocking operation if there is one
+      // TODO: handle jquery.dataTables.1.8.2.min.js:150 Uncaught TypeError: Cannot read property 'asSorting' of undefined on some cancels
+      // TODO: we should cancel blocking operation when leaving notebook (similar to unload())
+      // TODO: we should test when we go back to a query history of a blocking operation that we left
+      self.startLongOperationTimeout();
+
+      self.executingBlockingOperation = $.post("/notebook/api/execute/" + self.type(), {
+        notebook: self.vm.editorMode() ? ko.mapping.toJSON(self.notebook, NOTEBOOK_MAPPING) : ko.mapping.toJSON(self.notebook.getContext()),
+        snippet: ko.mapping.toJSON(self.getContext())
+      }, function (data) {
+        self.statusForButtons('executed');
+        huePubSub.publish('ace.set.autoexpand', { autoExpand: true, snippet: self });
+        self.stopLongOperationTimeout();
+
+        if (self.vm.editorMode() && data.history_id) {
+          if (! self.vm.isNotificationManager()) {
+            var url = '/notebook/editor' + (self.vm.isMobile() ? '_m' : '') + '?editor=' + data.history_id;
+            if (self.vm.isHue4()){
+              url = self.vm.URLS.hue4 + '?editor=' + data.history_id;
+            }
+            self.vm.changeURL(url);
+          }
+          self.notebook.id(data.history_id);
+          self.notebook.uuid(data.history_uuid);
+          self.notebook.isHistory(true);
+          self.notebook.parentSavedQueryUuid(data.history_parent_uuid);
+        }
+
+        if (data.status === 0) {
+          self.result.handle(data.handle);
+          self.result.hasResultset(data.handle.has_result_set);
+          if (data.handle.sync) {
+            self.loadData(data.result, 100);
+            self.status('available');
+            self.progress(100);
+            self.result.endTime(new Date());
+          } else {
+            if (! self.notebook.unloaded()) {
+              self.checkStatus();
+            }
+          }
+          if (self.vm.isOptimizerEnabled()) {
+            huePubSub.publish('editor.upload.query', data.history_id);
+          }
+        } else {
+          self._ajaxError(data, self.execute);
+          self.notebook.isExecutingAll(false);
+        }
+
+        if (data.handle) {
+          if (self.vm.editorMode()) {
+            if (self.vm.isNotificationManager()) { // Update task status
+              var tasks = $.grep(self.notebook.history(), function(row) { return row.uuid() === self.notebook.uuid()});
+              if (tasks.length === 1) {
+                tasks[0].status(self.status());
+                self.result.logs(data.message);
+              }
+            } else {
+              self.notebook.history.unshift(
+                self.notebook._makeHistoryRecord(
+                  url,
+                  data.handle.statement,
+                  self.lastExecuted(),
+                  self.status(),
+                  self.notebook.name(),
+                  self.notebook.uuid()
+                )
+              );
+            }
+          }
+
+          if (data.handle.statements_count != null) {
+            self.result.statements_count(data.handle.statements_count);
+            self.result.statement_id(data.handle.statement_id);
+            self.result.previous_statement_hash(data.previous_statement_hash);
+
+            if (data.handle.statements_count > 1 && data.handle.start != null && data.handle.end != null) {
+              self.result.statement_range({
+                start: data.handle.start,
+                end: data.handle.end
+              });
+            }
+          }
+        }
+      }).fail(function (xhr, textStatus, errorThrown) {
+        if (self.statusForButtons() !== 'canceled' && xhr.status !== 502) { // No error when manually canceled
+          $(document).trigger("error", xhr.responseText);
+        }
+        self.status('failed');
+        self.statusForButtons('executed');
+      }).always(function () {
+        self.executingBlockingOperation = null;
+      });
+    });
+  };
+
+  Snippet.prototype.reexecute = function () {
+    var self = this;
+
+    self.result.handle()['statement_id'] = 0;
+    self.result.handle()['start'] = {
+      row: 0,
+      column: 0
+    };
+    self.result.handle()['end'] = {
+      row: 0,
+      column: 0
+    };
+    self.result.handle()['has_more_statements'] = false;
+    self.result.handle()['previous_statement_hash'] = '';
+
+    self.execute();
   };
 
   var Session = function(vm, session) {
@@ -2976,7 +2991,7 @@ var EditorViewModel = (function() {
           snippet.status = 'ready' // Protect from storm of check_statuses
           var _snippet = new Snippet(vm, self, snippet);
           _snippet.init();
-          _snippet.previousChartOptions = vm._getPreviousChartOptions(_snippet);
+          _snippet.previousChartOptions = vm.getPreviousChartOptions(_snippet);
           self.presentationSnippets()[key] = _snippet;
         });
       }
@@ -3417,7 +3432,7 @@ var EditorViewModel = (function() {
             snippet.result.statement_range.valueHasMutated();
           }
 
-          snippet.previousChartOptions = self._getPreviousChartOptions(snippet);
+          snippet.previousChartOptions = self.getPreviousChartOptions(snippet);
         });
 
         if (notebook.snippets()[0].result.data().length > 0) {
@@ -3439,7 +3454,7 @@ var EditorViewModel = (function() {
       huePubSub.publish('recalculate.name.description.width');
     };
 
-    self._getPreviousChartOptions = function(snippet) {
+    self.getPreviousChartOptions = function(snippet) {
       return {
           chartLimit: typeof snippet.chartLimit() !== "undefined" ? snippet.chartLimit() : snippet.previousChartOptions.chartLimit,
           chartX: typeof snippet.chartX() !== "undefined" ? snippet.chartX() : snippet.previousChartOptions.chartX,

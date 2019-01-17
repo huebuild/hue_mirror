@@ -3651,7 +3651,7 @@ ${ sqlSyntaxDropdown.sqlSyntaxDropdown() }
         window.setTimeout(forceChartDraws, 50);
       });
 
-      $(document).on("executeStarted", function (e, options) {
+      huePubSub.subscribe('editor.execution.started', function (options) {
         var $el = $("#snippet_" + options.snippet.id()).find(".resultTable");
         if (options.vm.editorMode()) {
           $('#queryResults').css({
