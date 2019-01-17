@@ -76,10 +76,20 @@ var CancellablePromise = (function () {
     return self;
   };
 
+  /**
+   *
+   * @return {Promise}
+   */
   CancellablePromise.prototype.cancel = function () {
     var self = this;
+    var cancelDeferred = $.Deferred().done(function () {
+      while (self.cancelCallbacks.length) {
+        self.cancelCallbacks.pop()();
+      }
+    });
+
     if (self.cancelPrevented || self.cancelled || self.state() !== 'pending') {
-      return;
+      return cancelDeferred.resolve().promise();
     }
     self.cancelled = true;
     if (self.request) {
@@ -91,13 +101,19 @@ var CancellablePromise = (function () {
     }
 
     if (self.otherCancellables) {
-      self.otherCancellables.forEach(function (cancellable) { if (cancellable.cancel) { cancellable.cancel() } });
+      var otherCancelDeferrals = [];
+      self.otherCancellables.forEach(function (cancellable) {
+        if (cancellable.cancel) {
+          var cancelResult = cancellable.cancel();
+          if (cancelResult && cancelResult.done) {
+            otherCancelDeferrals.push(cancelResult)
+          }
+        }
+      });
+      $.when.apply($, otherCancelDeferrals).done(cancelDeferred.resolve)
     }
 
-    while (self.cancelCallbacks.length) {
-      self.cancelCallbacks.pop()();
-    }
-    return this;
+    return cancelDeferred.promise();
   };
 
   CancellablePromise.prototype.onCancel = function (callback) {
@@ -1760,6 +1776,44 @@ var ApiHelper = (function () {
     });
 
     return new CancellablePromise(deferred, undefined, cancellablePromises);
+  };
+
+  ApiHelper.prototype.executeSnippet = function (options) {
+    var self = this;
+    var deferred = $.Deferred();
+
+    var executeRequest = self.simplePost('/notebook/api/execute/' + options.sourceType, {
+      notebook: options.notebookJson,
+      snippet:  options.snippetJson
+    }, {
+      silenceErrors: options.silenceErrors
+    }).fail(deferred.reject);
+
+    var cancelled = false;
+    var cancelQuery = function () {
+      var cancelDeferred = $.Deferred();
+      if (cancelled) {
+        return cancelDeferred.resolve().promise();
+      }
+      cancelled = true;
+      executeRequest.done(function (sampleResponse) {
+        self.simplePost('/notebook/api/cancel_statement', {
+          notebook: ko.mapping.toJSON(options.notebookContext),
+          snippet: ko.mapping.toJSON(sampleResponse)
+        }, { silenceErrors:  options.silenceErrors });
+      }).always(cancelDeferred.resolve);
+      return cancelDeferred.promise();
+    };
+
+    executeRequest.done(function (response) {
+      if (!cancelled) {
+        deferred.resolve(response);
+      }
+    });
+
+    return new CancellablePromise(deferred, undefined, [{
+      cancel: cancelQuery
+    }]);
   };
 
   /**

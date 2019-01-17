@@ -1377,7 +1377,7 @@ var EditorViewModel = (function() {
       }
     }
 
-    self._ajaxError = function (data, callback) {
+    self.handleAjaxError = function (data, callback) {
       if (data.status === -2) { // Session expired
         var existingSession = self.notebook.getSession(self.type());
         if (existingSession) {
@@ -1444,21 +1444,21 @@ var EditorViewModel = (function() {
 
     self.wasBatchExecuted = ko.observable(typeof snippet.wasBatchExecuted != "undefined" && snippet.wasBatchExecuted != null ? snippet.wasBatchExecuted : false);
     self.isReady = ko.computed(function() {
-      return (self.statementType() == 'text' && (
+      return (self.statementType() === 'text' && (
           (self.isSqlDialect() && self.statement() !== '') ||
-          (['jar', 'java', 'spark2', 'distcp'].indexOf(self.type()) == -1 && self.statement() !== '') ||
-          (['jar', 'java'].indexOf(self.type()) != -1 && (self.properties().app_jar() != '' && self.properties().class() != '')) ||
-          (['spark2'].indexOf(self.type()) != -1 && self.properties().jars().length > 0) ||
-          (['shell'].indexOf(self.type()) != -1 && self.properties().command_path().length > 0) ||
-          (['mapreduce'].indexOf(self.type()) != -1 && self.properties().app_jar().length > 0) ||
-          (['distcp'].indexOf(self.type()) != -1 && self.properties().source_path().length > 0 && self.properties().destination_path().length > 0))) ||
-        (self.statementType() == 'file' && self.statementPath().length > 0) ||
-        (self.statementType() == 'document' && self.associatedDocumentUuid() && self.associatedDocumentUuid().length > 0);
+          (['jar', 'java', 'spark2', 'distcp'].indexOf(self.type()) === -1 && self.statement() !== '') ||
+          (['jar', 'java'].indexOf(self.type()) !== -1 && (self.properties().app_jar() !== '' && self.properties().class() !== '')) ||
+          (['spark2'].indexOf(self.type()) !== -1 && self.properties().jars().length > 0) ||
+          (['shell'].indexOf(self.type()) !== -1 && self.properties().command_path().length > 0) ||
+          (['mapreduce'].indexOf(self.type()) !== -1 && self.properties().app_jar().length > 0) ||
+          (['distcp'].indexOf(self.type()) !== -1 && self.properties().source_path().length > 0 && self.properties().destination_path().length > 0))) ||
+        (self.statementType() === 'file' && self.statementPath().length > 0) ||
+        (self.statementType() === 'document' && self.associatedDocumentUuid() && self.associatedDocumentUuid().length > 0);
     });
     self.lastExecuted = ko.observable(typeof snippet.lastExecuted != "undefined" && snippet.lastExecuted != null ? snippet.lastExecuted : 0);
     self.lastAceSelectionRowOffset = ko.observable(snippet.lastAceSelectionRowOffset || 0);
 
-    self.executingBlockingOperation = null; // A ExecuteStatement()
+    self.lastExecutePromise;
     self.showLongOperationWarning = ko.observable(false);
     self.showLongOperationWarning.subscribe(function(newValue) {
       if (newValue) {
@@ -1489,16 +1489,16 @@ var EditorViewModel = (function() {
 
     self.format = function () {
       if (self.isSqlDialect()) {
-        self.getApiHelper().formatSql({ statements: self.ace().getSelectedText() != '' ? self.ace().getSelectedText() : self.statement_raw() }).done(function (data) {
-          if (data.status == 0) {
-            if (self.ace().getSelectedText() != '') {
+        self.getApiHelper().formatSql({ statements: self.ace().getSelectedText() !== '' ? self.ace().getSelectedText() : self.statement_raw() }).done(function (data) {
+          if (data.status === 0) {
+            if (self.ace().getSelectedText() !== '') {
               self.ace().session.replace(self.ace().session.selection.getRange(), data.formatted_statements);
             } else {
               self.statement_raw(data.formatted_statements);
               self.ace().setValue(self.statement_raw(), 1);
             }
           } else {
-            self._ajaxError(data);
+            self.handleAjaxError(data);
           }
         });
       }
@@ -1533,7 +1533,7 @@ var EditorViewModel = (function() {
           self.result.fetchedOnce(true);
           self.result.explanation(data.explanation);
         } else {
-          self._ajaxError(data);
+          self.handleAjaxError(data);
         }
       });
     };
@@ -1649,7 +1649,7 @@ var EditorViewModel = (function() {
               self.showExecutionAnalysis(true);
               self.loadData(data.result, rows);
             } else {
-              self._ajaxError(data, function() {self.isFetchingData = false; self.fetchResultData(rows, startOver); });
+              self.handleAjaxError(data, function() {self.isFetchingData = false; self.fetchResultData(rows, startOver); });
               $(document).trigger("renderDataError", {snippet: self});
             }
           }, 'text').fail(function (xhr, textStatus, errorThrown) {
@@ -1814,7 +1814,7 @@ var EditorViewModel = (function() {
             self.status('expired');
             self.notebook.isExecutingAll(false);
           } else {
-            self._ajaxError(data);
+            self.handleAjaxError(data);
             self.notebook.isExecutingAll(false);
           }
           self.getLogs(); // Need to execute at the end, because updating the status impacts log progress results
@@ -1898,7 +1898,7 @@ var EditorViewModel = (function() {
             self.progress(data.progress)
           };
         } else {
-          self._ajaxError(data);
+          self.handleAjaxError(data);
         }
       }).fail(function (xhr, textStatus, errorThrown) {
         if (xhr.status !== 502) {
@@ -2039,40 +2039,39 @@ var EditorViewModel = (function() {
     };
   };
 
-  Snippet.prototype.cancel = function (callback) {
+  Snippet.prototype.cancel = function () {
     var self  = this;
+    var deferred = $.Deferred();
     hueAnalytics.log('notebook', 'cancel');
 
-    self.isCanceling(true);
     if (self.checkStatusTimeout != null) {
       window.clearTimeout(self.checkStatusTimeout);
       self.checkStatusTimeout = null;
     }
 
-    if ($.isEmptyObject(self.result.handle())) { // Query was not submitted yet or is currently being submitted
-      if (self.executingBlockingOperation != null) {
-        self.executingBlockingOperation.abort();
+    self.isCanceling(true);
+    self.statusForButtons('canceling');
+
+    if ($.isEmptyObject(self.result.handle()) && self.lastExecutePromise) {
+      self.lastExecutePromise.cancel().done(function () {
+        self.statusForButtons('canceled');
+        self.isCanceling(false);
+        self.status('canceled');
+        self.notebook.isExecutingAll(false);
         self.executingBlockingOperation = null;
-      }
-      self.statusForButtons('canceled');
-      self.status('failed');
-      self.isCanceling(false);
-      self.notebook.isExecutingAll(false);
-      if (callback) {
-        callback();
-      }
+        deferred.resolve();
+      });
     } else {
-      self.statusForButtons('canceling');
       $.post("/notebook/api/cancel_statement", {
         notebook: ko.mapping.toJSON(self.notebook.getContext()),
         snippet: ko.mapping.toJSON(self.getContext())
-      }, function (data) {
+      }).done(function (data) {
         self.statusForButtons('canceled');
         if (data.status === 0) {
           self.status('canceled');
           self.notebook.isExecutingAll(false);
         } else {
-          self._ajaxError(data);
+          self.handleAjaxError(data);
         }
       }).fail(function (xhr) {
         if (xhr.status !== 502) {
@@ -2083,11 +2082,10 @@ var EditorViewModel = (function() {
         self.notebook.isExecutingAll(false);
       }).always(function (){
         self.isCanceling(false);
-        if (callback) {
-          callback();
-        }
+        deferred.resolve();
       });
     }
+    return deferred.promise();
   };
 
   Snippet.prototype.close = function () {
@@ -2116,7 +2114,7 @@ var EditorViewModel = (function() {
 
     var cancelRunning = $.Deferred();
     if (!automaticallyTriggered && (self.status() === 'running' || self.status() === 'loading')) {
-      self.cancel(cancelRunning.resolve);
+      self.cancel().done(cancelRunning.resolve);
     } else {
       cancelRunning.resolve();
     }
@@ -2172,10 +2170,11 @@ var EditorViewModel = (function() {
       // TODO: we should test when we go back to a query history of a blocking operation that we left
       self.startLongOperationTimeout();
 
-      self.executingBlockingOperation = $.post("/notebook/api/execute/" + self.type(), {
-        notebook: self.vm.editorMode() ? ko.mapping.toJSON(self.notebook, NOTEBOOK_MAPPING) : ko.mapping.toJSON(self.notebook.getContext()),
-        snippet: ko.mapping.toJSON(self.getContext())
-      }, function (data) {
+      self.lastExecutePromise = ApiHelper.getInstance().executeSnippet({
+        notebookJson: self.vm.editorMode() ? ko.mapping.toJSON(self.notebook, NOTEBOOK_MAPPING) : ko.mapping.toJSON(self.notebook.getContext()),
+        snippetJson: ko.mapping.toJSON(self.getContext()),
+        sourceType: self.type()
+      }).done(function (data) {
         self.statusForButtons('executed');
         huePubSub.publish('ace.set.autoexpand', { autoExpand: true, snippet: self });
         self.stopLongOperationTimeout();
@@ -2211,7 +2210,7 @@ var EditorViewModel = (function() {
             huePubSub.publish('editor.upload.query', data.history_id);
           }
         } else {
-          self._ajaxError(data, self.execute);
+          self.handleAjaxError(data, self.execute);
           self.notebook.isExecutingAll(false);
         }
 
@@ -2250,14 +2249,11 @@ var EditorViewModel = (function() {
             }
           }
         }
-      }).fail(function (xhr, textStatus, errorThrown) {
-        if (self.statusForButtons() !== 'canceled' && xhr.status !== 502) { // No error when manually canceled
-          $(document).trigger("error", xhr.responseText);
-        }
+      }).fail(function () {
         self.status('failed');
         self.statusForButtons('executed');
       }).always(function () {
-        self.executingBlockingOperation = null;
+        self.lastExecutePromise = undefined;
       });
     });
   };
@@ -3321,7 +3317,7 @@ var EditorViewModel = (function() {
             if (result && result.exists) {
               $(document).trigger("info", result.path + ' saved successfully.');
             } else {
-              self._ajaxError(result);
+              self.handleAjaxError(result);
             }
           }
         };
