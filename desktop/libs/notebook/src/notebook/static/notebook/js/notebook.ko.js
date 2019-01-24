@@ -2592,7 +2592,7 @@ var EditorViewModel = (function() {
         if (xhr.status !== 502) {
           fail(xhr.responseText);
         }
-      }).complete(function(xhr, status) {
+      }).always(function() {
         self.creatingSessionLocks.remove(session.type());
       })
     };
