@@ -252,7 +252,7 @@ from desktop.views import _ko
 
             // Add to history
             notebook.history.unshift(
-                notebook._makeHistoryRecord(
+                notebook.makeHistoryRecord(
                     notebook.onSuccessUrl(),
                     notebook.description(),
                     (new Date()).getTime(),
