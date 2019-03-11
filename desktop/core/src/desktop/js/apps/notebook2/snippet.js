@@ -436,7 +436,9 @@ class Snippet {
           : getDefaultSnippetProperties(self.type())
       )
     );
-    self.hasProperties = ko.pureComputed(() => Object.keys(komapping.toJS(self.properties())).length > 0);
+    self.hasProperties = ko.pureComputed(
+      () => Object.keys(komapping.toJS(self.properties())).length > 0
+    );
 
     self.viewSettings = ko.pureComputed(() => self.vm.getSnippetViewSettings(self.type()));
 
@@ -536,8 +538,7 @@ class Snippet {
             }
           }
           const isPlaceholderInOptions =
-            !value.options ||
-            value.options.some(current => current.value === value.placeholder);
+            !value.options || value.options.some(current => current.value === value.placeholder);
           if (!isPlaceholderInOptions) {
             value.options.unshift({ text: value.placeholder, value: value.placeholder });
           }
@@ -802,7 +803,7 @@ class Snippet {
       const type = self.chartType();
       hueAnalytics.log('notebook', 'chart/' + type);
 
-      if (type === ko.HUE_CHARTS.TYPES.MAP && self.result.cleanedNumericMeta().length >= 2) {
+      if (type === window.HUE_CHARTS.TYPES.MAP && self.result.cleanedNumericMeta().length >= 2) {
         if (self.chartX() === null || typeof self.chartX() === 'undefined') {
           let name = self.result.cleanedNumericMeta()[0].name;
           self.result.cleanedNumericMeta().forEach(fld => {
@@ -832,9 +833,9 @@ class Snippet {
 
       if (
         (self.chartX() === null || typeof self.chartX() === 'undefined') &&
-        (type === ko.HUE_CHARTS.TYPES.BARCHART ||
-          type === ko.HUE_CHARTS.TYPES.PIECHART ||
-          type === ko.HUE_CHARTS.TYPES.GRADIENTMAP) &&
+        (type === window.HUE_CHARTS.TYPES.BARCHART ||
+          type === window.HUE_CHARTS.TYPES.PIECHART ||
+          type === window.HUE_CHARTS.TYPES.GRADIENTMAP) &&
         self.result.cleanedStringMeta().length >= 1
       ) {
         self.chartX(self.result.cleanedStringMeta()[0].name);
@@ -843,7 +844,7 @@ class Snippet {
       if (self.result.cleanedNumericMeta().length > 0) {
         if (
           self.chartYMulti().length === 0 &&
-          (type === ko.HUE_CHARTS.TYPES.BARCHART || type === ko.HUE_CHARTS.TYPES.LINECHART)
+          (type === window.HUE_CHARTS.TYPES.BARCHART || type === window.HUE_CHARTS.TYPES.LINECHART)
         ) {
           self.chartYMulti.push(
             self.result.cleanedNumericMeta()[
@@ -852,11 +853,11 @@ class Snippet {
           );
         } else if (
           (self.chartYSingle() === null || typeof self.chartYSingle() === 'undefined') &&
-          (type === ko.HUE_CHARTS.TYPES.PIECHART ||
-            type === ko.HUE_CHARTS.TYPES.MAP ||
-            type === ko.HUE_CHARTS.TYPES.GRADIENTMAP ||
-            type === ko.HUE_CHARTS.TYPES.SCATTERCHART ||
-            (type === ko.HUE_CHARTS.TYPES.BARCHART && self.chartXPivot() !== null))
+          (type === window.HUE_CHARTS.TYPES.PIECHART ||
+            type === window.HUE_CHARTS.TYPES.MAP ||
+            type === window.HUE_CHARTS.TYPES.GRADIENTMAP ||
+            type === window.HUE_CHARTS.TYPES.SCATTERCHART ||
+            (type === window.HUE_CHARTS.TYPES.BARCHART && self.chartXPivot() !== null))
         ) {
           if (self.chartYMulti().length === 0) {
             self.chartYSingle(
@@ -898,7 +899,7 @@ class Snippet {
 
     self.is_redacted = ko.observable(!!snippet.is_redacted);
 
-    self.chartType = ko.observable(snippet.chartType || ko.HUE_CHARTS.TYPES.BARCHART);
+    self.chartType = ko.observable(snippet.chartType || window.HUE_CHARTS.TYPES.BARCHART);
     self.chartType.subscribe(prepopulateChart);
     self.chartSorting = ko.observable(snippet.chartSorting || 'none');
     self.chartScatterGroup = ko.observable(snippet.chartScatterGroup);
@@ -908,7 +909,7 @@ class Snippet {
     self.chartLimits = ko.observableArray([5, 10, 25, 50, 100]);
     self.chartLimit = ko.observable(snippet.chartLimit);
     self.chartLimit.extend({ notify: 'always' });
-    self.chartX = ko.observable(snippet.chartX );
+    self.chartX = ko.observable(snippet.chartX);
     self.chartX.extend({ notify: 'always' });
     self.chartXPivot = ko.observable(snippet.chartXPivot);
     self.chartXPivot.extend({ notify: 'always' });
@@ -923,9 +924,9 @@ class Snippet {
 
     self.hasDataForChart = ko.pureComputed(() => {
       if (
-        self.chartType() === ko.HUE_CHARTS.TYPES.BARCHART ||
-        self.chartType() === ko.HUE_CHARTS.TYPES.LINECHART ||
-        self.chartType() === ko.HUE_CHARTS.TYPES.TIMELINECHART
+        self.chartType() === window.HUE_CHARTS.TYPES.BARCHART ||
+        self.chartType() === window.HUE_CHARTS.TYPES.LINECHART ||
+        self.chartType() === window.HUE_CHARTS.TYPES.TIMELINECHART
       ) {
         return (
           typeof self.chartX() != 'undefined' &&
@@ -1066,7 +1067,7 @@ class Snippet {
     self.lastCheckedComplexityStatement = undefined;
     self.lastComplexityRequest = undefined;
     self.knownRiskResponses = [];
-    
+
     if (HAS_OPTIMIZER && !self.vm.isNotificationManager()) {
       self.delayedStatement = ko
         .pureComputed(self.statement)
@@ -1168,7 +1169,7 @@ class Snippet {
     return self.aceEditor;
   }
 
-  cancel = function() {
+  cancel() {
     const self = this;
     hueAnalytics.log('notebook', 'cancel');
 
@@ -1220,7 +1221,7 @@ class Snippet {
           self.isCanceling(false);
         });
     }
-  };
+  }
 
   checkCompatibility() {
     const self = this;
@@ -1312,7 +1313,10 @@ class Snippet {
         snippet: komapping.toJSON(self.getContext())
       },
       data => {
-        if (self.statusForButtons() === STATUS_FOR_BUTTONS.canceling || self.status() === STATUS.canceled) {
+        if (
+          self.statusForButtons() === STATUS_FOR_BUTTONS.canceling ||
+          self.status() === STATUS.canceled
+        ) {
           // Query was canceled in the meantime, do nothing
         } else {
           self.result.endTime(new Date());
@@ -1645,7 +1649,11 @@ class Snippet {
     const self = this;
     hueAnalytics.log('notebook', 'explain');
 
-    if (self.statement() === '' || self.status() === STATUS.running || self.status() === STATUS.loading) {
+    if (
+      self.statement() === '' ||
+      self.status() === STATUS.running ||
+      self.status() === STATUS.loading
+    ) {
       return;
     }
 
@@ -1753,7 +1761,7 @@ class Snippet {
           },
           'text'
         )
-          .fail((xhr) => {
+          .fail(xhr => {
             if (xhr.status !== 502) {
               $(document).trigger('error', xhr.responseText);
             }
@@ -2338,7 +2346,7 @@ class Snippet {
     }
   }
 
-  queryCompatibility = function(targetPlatform) {
+  queryCompatibility(targetPlatform) {
     const self = this;
     apiHelper.cancelActiveRequest(self.lastCompatibilityRequest);
 
@@ -2403,7 +2411,7 @@ class Snippet {
       .always(() => {
         self.compatibilityCheckRunning(false);
       });
-  };
+  }
 
   reexecute() {
     const self = this;

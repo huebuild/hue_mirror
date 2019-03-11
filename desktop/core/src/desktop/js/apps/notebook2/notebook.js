@@ -272,7 +272,6 @@ class Notebook {
     const self = this;
     const newSnippet = new Snippet(self.vm, self, snippet);
     self.snippets.push(newSnippet);
-
     if (self.getSession(newSnippet.type()) == null && typeof skipSession == 'undefined') {
       window.setTimeout(() => {
         newSnippet.status('loading');
