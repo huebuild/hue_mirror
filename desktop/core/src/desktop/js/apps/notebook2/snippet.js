@@ -167,6 +167,29 @@ const getDefaultSnippetProperties = function(snippetType) {
 
 const ERROR_REGEX = /line ([0-9]+)(:([0-9]+))?/i;
 
+const STATUS = {
+  available: 'available',
+  canceled: 'canceled',
+  closed: 'closed',
+  expired: 'expired',
+  failed: 'failed',
+  loading: 'loading',
+  ready: 'ready',
+  readyExecute: 'ready-execute',
+  running: 'running',
+  starting: 'starting',
+  success: 'success',
+  waiting: 'waiting',
+  withOptimizerReport: 'with-optimizer-report'
+};
+
+const STATUS_FOR_BUTTONS = {
+  canceled: 'canceled',
+  canceling: 'canceling',
+  executed: 'executed',
+  executing: 'executing'
+};
+
 class Snippet {
   constructor(vm, notebook, snippet) {
     const self = this;
@@ -178,7 +201,7 @@ class Snippet {
     self.name = ko.observable(snippet.name || '');
     self.type = ko.observable(snippet.type || 'hive');
     self.type.subscribe(() => {
-      self.status('ready');
+      self.status(STATUS.ready);
     });
 
     self.isBatchable = ko.pureComputed(
@@ -345,11 +368,7 @@ class Snippet {
 
     self.associatedDocumentLoading = ko.observable(true);
     self.associatedDocument = ko.observable();
-    self.associatedDocumentUuid = ko.observable(
-      typeof snippet.associatedDocumentUuid != 'undefined' && snippet.associatedDocumentUuid != null
-        ? snippet.associatedDocumentUuid
-        : null
-    );
+    self.associatedDocumentUuid = ko.observable(snippet.associatedDocumentUuid);
     self.associatedDocumentUuid.subscribe(val => {
       if (val !== '') {
         self.getExternalStatement();
@@ -358,14 +377,10 @@ class Snippet {
         self.ace().setValue('', 1);
       }
     });
-    self.statement_raw = ko.observable(
-      typeof snippet.statement_raw != 'undefined' && snippet.statement_raw != null
-        ? snippet.statement_raw
-        : ''
-    );
+    self.statement_raw = ko.observable(snippet.statement_raw || '');
     self.selectedStatement = ko.observable('');
-    self.positionStatement = ko.observable(null);
-    self.lastExecutedStatement = ko.observable(null);
+    self.positionStatement = ko.observable();
+    self.lastExecutedStatement = ko.observable();
     self.statementsList = ko.observableArray();
 
     huePubSub.subscribe(
@@ -395,7 +410,7 @@ class Snippet {
             if (self.notebook.isPresentationModeDefault()) {
               // When switching to presentation mode, the snippet in non presentation mode cannot get status notification.
               // On initiailization, status is set to loading and does not get updated, because we moved to presentation mode.
-              self.status('ready');
+              self.status(STATUS.ready);
             }
             // Changing to presentation mode requires statementsList to be initialized. statementsList is initialized asynchronously.
             // When presentation mode is default, we cannot change before statementsList has been calculated.
@@ -409,14 +424,10 @@ class Snippet {
       self.vm.huePubSubId
     );
 
-    self.aceSize = ko.observable(
-      typeof snippet.aceSize != 'undefined' && snippet.aceSize != null ? snippet.aceSize : 100
-    );
+    self.aceSize = ko.observable(snippet.aceSize || 100);
     // self.statement_raw.extend({ rateLimit: 150 }); // Should prevent lag from typing but currently send the old query when using the key shortcut
-    self.status = ko.observable(
-      typeof snippet.status != 'undefined' && snippet.status != null ? snippet.status : 'loading'
-    );
-    self.statusForButtons = ko.observable('executed');
+    self.status = ko.observable(snippet.status || STATUS.loading);
+    self.statusForButtons = ko.observable(STATUS_FOR_BUTTONS.executed);
 
     self.properties = ko.observable(
       komapping.fromJS(
@@ -425,13 +436,9 @@ class Snippet {
           : getDefaultSnippetProperties(self.type())
       )
     );
-    self.hasProperties = ko.pureComputed(() => {
-      return Object.keys(komapping.toJS(self.properties())).length > 0;
-    });
+    self.hasProperties = ko.pureComputed(() => Object.keys(komapping.toJS(self.properties())).length > 0);
 
-    self.viewSettings = ko.pureComputed(() => {
-      return self.vm.getSnippetViewSettings(self.type());
-    });
+    self.viewSettings = ko.pureComputed(() => self.vm.getSnippetViewSettings(self.type()));
 
     const previousProperties = {};
     self.type.subscribe(
@@ -470,9 +477,7 @@ class Snippet {
         delete variable.defaultValue;
       });
     }
-    self.variables = komapping.fromJS(
-      typeof snippet.variables != 'undefined' && snippet.variables != null ? snippet.variables : []
-    );
+    self.variables = komapping.fromJS(snippet.variables || []);
     self.variables.subscribe(() => {
       $(document).trigger('updateResultHeaders', self);
     });
@@ -885,7 +890,7 @@ class Snippet {
       }
     });
 
-    self.isLoading = ko.pureComputed(() => self.status() === 'loading');
+    self.isLoading = ko.pureComputed(() => self.status() === STATUS.loading);
 
     self.resultsKlass = ko.pureComputed(() => 'results ' + self.type());
 
@@ -1020,9 +1025,8 @@ class Snippet {
     self.topRisk = ko.pureComputed(() => {
       if (self.hasRisks()) {
         return self.complexity()['hints'][0];
-      } else {
-        return null;
       }
+      return null;
     });
 
     self.suggestion = ko.observable('');
@@ -1062,6 +1066,7 @@ class Snippet {
     self.lastCheckedComplexityStatement = undefined;
     self.lastComplexityRequest = undefined;
     self.knownRiskResponses = [];
+    
     if (HAS_OPTIMIZER && !self.vm.isNotificationManager()) {
       self.delayedStatement = ko
         .pureComputed(self.statement)
@@ -1181,12 +1186,12 @@ class Snippet {
 
     if ($.isEmptyObject(self.result.handle())) {
       // Query was not even submitted yet
-      self.statusForButtons('canceled');
-      self.status('failed');
+      self.statusForButtons(STATUS_FOR_BUTTONS.canceled);
+      self.status(STATUS.failed);
       self.isCanceling(false);
       self.notebook.isExecutingAll(false);
     } else {
-      self.statusForButtons('canceling');
+      self.statusForButtons(STATUS_FOR_BUTTONS.canceling);
       $.post(
         '/notebook/api/cancel_statement',
         {
@@ -1194,9 +1199,9 @@ class Snippet {
           snippet: komapping.toJSON(self.getContext())
         },
         data => {
-          self.statusForButtons('canceled');
+          self.statusForButtons(STATUS_FOR_BUTTONS.canceled);
           if (data.status === 0) {
-            self.status('canceled');
+            self.status(STATUS.canceled);
             self.notebook.isExecutingAll(false);
           } else {
             self.handleAjaxError(data);
@@ -1207,8 +1212,8 @@ class Snippet {
           if (xhr.status !== 502) {
             $(document).trigger('error', xhr.responseText);
           }
-          self.statusForButtons('canceled');
-          self.status('failed');
+          self.statusForButtons(STATUS_FOR_BUTTONS.canceled);
+          self.status(STATUS.failed);
           self.notebook.isExecutingAll(false);
         })
         .always(() => {
@@ -1307,7 +1312,7 @@ class Snippet {
         snippet: komapping.toJSON(self.getContext())
       },
       data => {
-        if (self.statusForButtons() === 'canceling' || self.status() === 'canceled') {
+        if (self.statusForButtons() === STATUS_FOR_BUTTONS.canceling || self.status() === STATUS.canceled) {
           // Query was canceled in the meantime, do nothing
         } else {
           self.result.endTime(new Date());
@@ -1316,15 +1321,15 @@ class Snippet {
             self.status(data.query_status.status);
 
             if (
-              self.status() === 'running' ||
-              self.status() === 'starting' ||
-              self.status() === 'waiting'
+              self.status() === STATUS.running ||
+              self.status() === STATUS.starting ||
+              self.status() === STATUS.waiting
             ) {
               const delay = self.result.executionTime() > 45000 ? 5000 : 1000; // 5s if more than 45s
               if (!self.notebook.unloaded()) {
                 self.checkStatusTimeout = setTimeout(self.checkStatus, delay);
               }
-            } else if (self.status() === 'available') {
+            } else if (self.status() === STATUS.available) {
               self.fetchResult(100);
               self.progress(100);
               if (self.isSqlDialect()) {
@@ -1352,11 +1357,11 @@ class Snippet {
               if (!self.result.handle().has_more_statements && self.vm.successUrl()) {
                 window.location.href = self.vm.successUrl(); // Not used anymore in Hue 4
               }
-            } else if (self.status() === 'success') {
+            } else if (self.status() === STATUS.success) {
               self.progress(99);
             }
           } else if (data.status === -3) {
-            self.status('expired');
+            self.status(STATUS.expired);
             self.notebook.isExecutingAll(false);
           } else {
             self.handleAjaxError(data);
@@ -1369,7 +1374,7 @@ class Snippet {
       if (xhr.status !== 502) {
         $(document).trigger('error', xhr.responseText || textStatus);
       }
-      self.status('failed');
+      self.status(STATUS.failed);
       self.notebook.isExecutingAll(false);
     });
   }
@@ -1379,7 +1384,7 @@ class Snippet {
     hueAnalytics.log('notebook', 'clear');
     self.ace().setValue('', 1);
     self.result.clear();
-    self.status('ready');
+    self.status(STATUS.ready);
   }
 
   clearActiveRisks() {
@@ -1416,7 +1421,7 @@ class Snippet {
       },
       data => {
         if (data.status === 0) {
-          // self.status('closed'); // Keep as 'running' as currently it happens before running a new query
+          // self.status(STATUS.closed); // Keep as 'running' as currently it happens before running a new query
         } else {
           // self.handleAjaxError(data);
         }
@@ -1425,7 +1430,7 @@ class Snippet {
       if (xhr.status !== 502) {
         // $(document).trigger("error", xhr.responseText);
       }
-      // self.status('failed'); // Can conflict with slow close and new query execution
+      // self.status(STATUS.failed); // Can conflict with slow close and new query execution
     });
   }
 
@@ -1459,7 +1464,7 @@ class Snippet {
 
     if (!automaticallyTriggered) {
       // Do not cancel statements that are parts of a set of steps to execute (e.g. import). Only cancel statements as requested by user
-      if (self.status() === 'running' || self.status() === 'loading') {
+      if (self.status() === STATUS.running || self.status() === STATUS.loading) {
         self.cancel(); // TODO: Wait for cancel to finish
       } else {
         self.result.clear();
@@ -1471,8 +1476,8 @@ class Snippet {
       huePubSub.publish('editor.clear.execution.analysis');
     }
 
-    self.status('running');
-    self.statusForButtons('executing');
+    self.status(STATUS.running);
+    self.statusForButtons(STATUS_FOR_BUTTONS.executing);
 
     if (self.isSqlDialect()) {
       huePubSub.publish('editor.refresh.statement.locations', self);
@@ -1545,7 +1550,7 @@ class Snippet {
         } catch (e) {
           self.lastExecutedStatement(null);
         }
-        self.statusForButtons('executed');
+        self.statusForButtons(STATUS_FOR_BUTTONS.executed);
         huePubSub.publish('ace.set.autoexpand', { autoExpand: true, snippet: self });
         self.stopLongOperationTimeout();
 
@@ -1565,7 +1570,7 @@ class Snippet {
           self.result.hasResultset(data.handle.has_result_set);
           if (data.handle.sync) {
             self.loadData(data.result, 100);
-            self.status('available');
+            self.status(STATUS.available);
             self.progress(100);
             self.result.endTime(new Date());
           } else if (!self.notebook.unloaded()) {
@@ -1624,12 +1629,12 @@ class Snippet {
       }
     )
       .fail(xhr => {
-        if (self.statusForButtons() !== 'canceled' && xhr.status !== 502) {
+        if (self.statusForButtons() !== STATUS_FOR_BUTTONS.canceled && xhr.status !== 502) {
           // No error when manually canceled
           $(document).trigger('error', xhr.responseText);
         }
-        self.status('failed');
-        self.statusForButtons('executed');
+        self.status(STATUS.failed);
+        self.statusForButtons(STATUS_FOR_BUTTONS.executed);
       })
       .always(() => {
         self.executingBlockingOperation = null;
@@ -1640,14 +1645,14 @@ class Snippet {
     const self = this;
     hueAnalytics.log('notebook', 'explain');
 
-    if (self.statement() === '' || self.status() === 'running' || self.status() === 'loading') {
+    if (self.statement() === '' || self.status() === STATUS.running || self.status() === STATUS.loading) {
       return;
     }
 
     self.result.explanation('');
     self.errors([]);
     self.progress(0);
-    self.status('ready');
+    self.status(STATUS.ready);
 
     $.post(
       '/notebook/api/explain',
@@ -1720,7 +1725,7 @@ class Snippet {
   fetchResultData(rows, startOver) {
     const self = this;
     if (!self.isFetchingData) {
-      if (self.status() === 'available') {
+      if (self.status() === STATUS.available) {
         self.startLongOperationTimeout();
         self.isFetchingData = true;
         hueAnalytics.log('notebook', 'fetchResult/' + rows + '/' + startOver);
@@ -1781,7 +1786,7 @@ class Snippet {
       if (xhr.status !== 502) {
         $(document).trigger('error', xhr.responseText);
       }
-      self.status('failed');
+      self.status(STATUS.failed);
     });
   }
 
@@ -1959,7 +1964,7 @@ class Snippet {
               }
             });
           }
-          if (self.status() === 'running') {
+          if (self.status() === STATUS.running) {
             // Maybe the query finished or failed in the meantime
             self.progress(data.progress);
           }
@@ -1971,7 +1976,7 @@ class Snippet {
       if (xhr.status !== 502) {
         $(document).trigger('error', xhr.responseText || textStatus);
       }
-      self.status('failed');
+      self.status(STATUS.failed);
     });
   }
 
@@ -2089,7 +2094,7 @@ class Snippet {
       }
     } else if (data.status === -3) {
       // Statement expired
-      self.status('expired');
+      self.status(STATUS.expired);
       if (data.message) {
         self.errors.push({ message: data.message, help: null, line: null, col: null });
         huePubSub.publish('editor.snippet.result.normal', self);
@@ -2097,7 +2102,7 @@ class Snippet {
     } else if (data.status === -4) {
       // Operation timed out
       self.notebook.retryModalCancel = function() {
-        self.status('failed');
+        self.status(STATUS.failed);
         huePubSub.publish('hide.retry.modal');
       };
       self.notebook.retryModalConfirm = function() {
@@ -2109,10 +2114,10 @@ class Snippet {
       huePubSub.publish('show.retry.modal');
     } else if (data.status === 401) {
       // Auth required
-      self.status('expired');
+      self.status(STATUS.expired);
       $(document).trigger('showAuthModal', { type: self.type(), callback: self.execute });
     } else if (data.status === 1 || data.status === -1) {
-      self.status('failed');
+      self.status(STATUS.failed);
       const match = ERROR_REGEX.exec(data.message);
       if (match) {
         let errorLine = parseInt(match[1]);
@@ -2146,7 +2151,7 @@ class Snippet {
       }
     } else {
       $(document).trigger('error', data.message);
-      self.status('failed');
+      self.status(STATUS.failed);
     }
   }
 
@@ -2169,15 +2174,15 @@ class Snippet {
   init() {
     const self = this;
     if (
-      (self.status() === 'running' || self.status() === 'available') &&
+      (self.status() === STATUS.running || self.status() === STATUS.available) &&
       self.notebook.isHistory()
     ) {
       self.checkStatus();
-    } else if (self.status() === 'loading') {
-      self.status('failed');
+    } else if (self.status() === STATUS.loading) {
+      self.status(STATUS.failed);
       self.progress(0);
       self.jobs([]);
-    } else if (self.status() === 'ready-execute') {
+    } else if (self.status() === STATUS.readyExecute) {
       self.execute();
     }
   }
@@ -2371,7 +2376,7 @@ class Snippet {
               col:
                 match === null ? null : typeof match[3] !== 'undefined' ? parseInt(match[3]) : null
             });
-            self.status('with-optimizer-report');
+            self.status(STATUS.withOptimizerReport);
           }
           if (self.suggestion().parseError()) {
             const match = ERROR_REGEX.exec(self.suggestion().parseError());
@@ -2381,7 +2386,7 @@ class Snippet {
               col:
                 match === null ? null : typeof match[3] !== 'undefined' ? parseInt(match[3]) : null
             });
-            self.status('with-optimizer-report');
+            self.status(STATUS.withOptimizerReport);
           }
           self.showOptimizer(true);
           self.hasSuggestion(true);
