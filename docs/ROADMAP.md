@@ -4,7 +4,7 @@ High Level Roadmap
 ------------------
 
 * [ ] Task Server workers [HUE-8738](https://issues.cloudera.org/browse/HUE-8738)
-* [ ] Task Server scheduler [HUE-8740](https://issues.cloudera.org/browse/HUE-8740)
+* [ ] Query Scheduling [HUE-3797](https://issues.cloudera.org/browse/HUE-3797)
 * [ ] Python 3 support [HUE-8737](https://issues.cloudera.org/browse/HUE-8737)
 * [ ] Docker [HUE-8743](https://issues.cloudera.org/browse/HUE-8743)
 * [ ] Kubernetes [HUE-8744](https://issues.cloudera.org/browse/HUE-8744)
@@ -15,7 +15,6 @@ High Level Roadmap
 * [ ] Result caching [HUE-8787](https://issues.cloudera.org/browse/HUE-8787)
 * [ ] Editor v2 [HUE-8768](https://issues.cloudera.org/browse/HUE-8768)
 * [ ] Integrate with Apache Ranger [HUE-8748](https://issues.cloudera.org/browse/HUE-8748)
-* [ ] Document sharing improvements [HUE-8790](https://issues.cloudera.org/browse/HUE-8790)
 * [ ] Integrate with Apache Atlas [HUE-8749](https://issues.cloudera.org/browse/HUE-8749)
 * [ ] Integrate with Apache Knox [HUE-8750](https://issues.cloudera.org/browse/HUE-8750)
 * [ ] SQL Dashboards and Query Builder [HUE-3228](https://issues.cloudera.org/browse/HUE-3228)
@@ -23,6 +22,7 @@ High Level Roadmap
 * [ ] Configuration of connectors via the interface [HUE-8758](https://issues.cloudera.org/browse/HUE-8758)
 * [ ] SQL Alchemy full support [HUE-8740](https://issues.cloudera.org/browse/HUE-8740)
 * [ ] Public REST APIs [HUE-1450](https://issues.cloudera.org/browse/HUE-1450)
+* [ ] Generify the risk alert and suggestion optimization API [HUE-8824](https://issues.cloudera.org/browse/HUE-8824)
 * [ ] Git integration [HUE-951](https://issues.cloudera.org/browse/HUE-951)
 
 Done
