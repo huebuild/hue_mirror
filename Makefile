@@ -283,6 +283,10 @@ sql-all-parsers:
 sql-autocomplete-parser:
 	@node tools/jison/generateParsers.js sqlAutocompleteParser
 
+.PHONY: custom-sql-autocomplete-parser
+custom-sql--autocomplete-parser:
+	@node tools/jison/generateParsers.js customSqlAutocompleteParser
+
 .PHONY: sql-statement-parser
 sql-statement-parser:
 	@node tools/jison/generateParsers.js sqlStatementsParser

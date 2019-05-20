@@ -102,6 +102,18 @@ const PARSERS = {
         '\nexport default sqlSyntaxParser;\n');
     })
   },
+  customSqlAutocompleteParser: {
+    sources: [
+      'autocomplete_header.jison', 'customSql_main.jison', 'customSql_valueExpression.jison', 'autocomplete_footer.jison'
+    ],
+    target: 'customSqlAutocompleteParser.jison',
+    lexer: 'customSql.jisonlex',
+    afterParse: (contents) => new Promise(resolve => {
+      resolve(LICENSE +
+        contents.replace('var customSqlAutocompleteParser = ', 'import SqlParseSupport from \'parse/sqlParseSupport\';\n\nvar customSqlAutocompleteParser = ') +
+        '\nexport default customSqlAutocompleteParser;\n');
+    })
+  },
 };
 
 const readFile = (path) => new Promise((resolve, reject) => {
