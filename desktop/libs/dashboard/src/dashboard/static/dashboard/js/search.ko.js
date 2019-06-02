@@ -35,7 +35,7 @@ function textSearchLayout(vm, isQueryBuilder) {
   huePubSub.publish('dashboard.set.layout');
 }
 
-function loadSearchLayout(viewModel, json_layout) {
+function loadSearchLayout(viewModel, json_layout) {console.log('loadSearchLayout'); console.trace()
   var _columns = [];
 
   $(json_layout).each(function (cnt, json_col) {
