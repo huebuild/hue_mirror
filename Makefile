@@ -213,6 +213,7 @@ install-env:
 	cp $(ROOT)/package.json $(INSTALL_DIR)
 	cp $(ROOT)/webpack.config*.js $(INSTALL_DIR)
 	$(MAKE) -C $(INSTALL_DIR) npm-install
+	$(MAKE) -C $(INSTALL_DIR) create-static
 
 
 ###################################
