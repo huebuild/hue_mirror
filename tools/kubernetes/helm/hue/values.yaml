@@ -1,5 +1,7 @@
-registry: "gethue/hue"
-tag: "latest"
+# registry: "gethue"
+# tag: "latest"
+registry: "localhost:32000"
+tag: "registry"
 hue:
   database:
     create: true
@@ -33,6 +35,11 @@ hue:
     show_notebooks=false
 
     [hadoop]
+balancer:
+  enabled: true
+workers:
+  enabled: true
+  replicas: 1
 aws:
   accessKeyId: ""
   secretAccessKey: ""
