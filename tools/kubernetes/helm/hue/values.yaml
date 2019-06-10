@@ -1,8 +1,12 @@
-# registry: "gethue"
-# tag: "latest"
-registry: "localhost:32000"
-tag: "registry"
+image:
+  # registry: "gethue"
+  # tag: "latest"
+  # pullPolicy: "IfNotPresent"
+  registry: "localhost:32000"
+  tag: "registry"
+  pullPolicy: "Always"
 hue:
+  replicas: 1
   database:
     create: true
     engine: "postgresql_psycopg2"
@@ -28,6 +32,7 @@ hue:
   ini: |
     [desktop]
     app_blacklist=filebrowser,search,hbase,security,jobbrowser,metastore
+    django_debug_mode=true
 
     [[task_server]]
     enabled=true
