@@ -70,6 +70,8 @@ import SqlAutocompleter from 'sql/sqlAutocompleter';
 import sqlAutocompleteParser from 'parse/sqlAutocompleteParser'; // Notebook and used throughout via hue-simple-ace-editor ko component
 import sqlStatementsParser from 'parse/sqlStatementsParser'; // In search.ko and notebook.ko
 
+import sqlParserRepository from 'parse/sql/sqlParserRepository';
+
 // TODO: Migrate away
 window._ = _;
 window.apiHelper = apiHelper;
@@ -107,6 +109,7 @@ window.sqlAutocompleteParser = sqlAutocompleteParser;
 window.SqlAutocompleter = SqlAutocompleter;
 window.SqlFunctions = SqlFunctions;
 window.SqlSetOptions = SqlSetOptions;
+window.sqlParserRepository = sqlParserRepository;
 window.sqlStatementsParser = sqlStatementsParser;
 window.sqlUtils = sqlUtils;
 window.sqlWorkerHandler = sqlWorkerHandler;
