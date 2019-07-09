@@ -858,11 +858,11 @@ A series of native connectors interacting with the editor have been developed an
 
 ### JDBC
 
-**Note** This is an historical connector, SQLAlchemy should be prefered at this time.
+**Note** This is an historical connector, SQLAlchemy should be prefered at this time as it does not require a proxy and is fully secure.
 
 Use the query editor with any JDBC database.
 
-The “rdbms” interface works great for MySQL, PostgreSQL, SQLite, and Oracle, but for other JDBC-compatible databases Hue now finally supports a “jdbc” interface to integrate such databases with the new query editor!
+The “rdbms” interface works great for MySQL, PostgreSQL, SQLite, and Oracle, but for other JDBC-compatible databases Hue supports a “jdbc” interface to integrate such databases with the editor.
 
 Integrating an external JDBC database involves a 3-step process:
 
@@ -888,8 +888,11 @@ be started if any interpreter is using it.
     ## Main flag to override the automatic starting of the DBProxy server.
     enable_dbproxy_server=true
 
+**Note**
+Hue needs to be compiled with the flag `BUILD_DB_PROXY=true` in order to come with the JDBC connector.
+
 **Tip**: Testing JDBC Configurations
-Before adding your interpreter’s JDBC configurations to hue.ini, verify that the JDBC driver and connection settings work in a SQL client like SQuirrel SQL.
+Before adding your interpreter's JDBC configurations to hue.ini, verify that the JDBC driver and connection settings work in a SQL client like SQuirrel SQL.
 
 **Tip**: Prompt for JDBC authentication
 You can leave out the username and password in the JDBC options, and Hue will instead prompt the user for a username and password. This allows administrators to provide access to JDBC sources without granting all Hue users the same access.
