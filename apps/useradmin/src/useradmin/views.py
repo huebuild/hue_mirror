@@ -56,6 +56,7 @@ from useradmin.forms import SyncLdapUsersGroupsForm, AddLdapGroupsForm, AddLdapU
 
 from desktop.auth.backend import is_admin
 
+
 LOG = logging.getLogger(__name__)
 
 __users_lock = threading.Lock()
