@@ -44,20 +44,21 @@ from notebook.conf import SHOW_NOTEBOOKS, get_ordered_interpreters
 from settings import HUE_DESKTOP_VERSION
 
 from desktop import appmanager
+from desktop.auth.backend import is_admin
 from desktop.conf import get_clusters, CLUSTER_ID, IS_MULTICLUSTER_ONLY, IS_EMBEDDED, IS_K8S_ONLY, ENABLE_ORGANIZATIONS
 from desktop.lib.i18n import force_unicode
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.paths import get_run_root, SAFE_CHARACTERS_URI_COMPONENTS
 from desktop.redaction import global_redaction_engine
 from desktop.settings import DOCUMENT2_SEARCH_MAX_LENGTH
-from desktop.auth.backend import is_admin
-
-LOG = logging.getLogger(__name__)
 
 if ENABLE_ORGANIZATIONS.get():
   from useradmin.models import OrganizationUser as User, OrganizationGroup as Group
 else:
   from django.contrib.auth.models import User, Group
+
+
+LOG = logging.getLogger(__name__)
 
 SAMPLE_USER_ID = 1100713
 SAMPLE_USER_INSTALL = 'hue'
@@ -95,15 +96,16 @@ def _version_from_properties(f):
 PREFERENCE_IS_WELCOME_TOUR_SEEN = 'is_welcome_tour_seen'
 
 
-class HueUser(User):
-  class Meta:
-    proxy = True
+if not ENABLE_ORGANIZATIONS.get():
+  class HueUser(User):
+    class Meta:
+      proxy = True
 
-  def __init__(self, *args, **kwargs):
-    self._meta.get_field(
-      'username'
-    ).validators[0] = UnicodeUsernameValidator()
-    super(User, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+      self._meta.get_field(
+        'username'
+      ).validators[0] = UnicodeUsernameValidator()
+      super(User, self).__init__(*args, **kwargs)
 
 
 class UserPreferences(models.Model):
@@ -111,8 +113,6 @@ class UserPreferences(models.Model):
   user = models.ForeignKey(User)
   key = models.CharField(max_length=20)
   value = models.TextField(max_length=4096)
-
-
 
 
 class Settings(models.Model):
