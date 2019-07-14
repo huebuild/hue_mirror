@@ -152,7 +152,7 @@ if ENABLE_ORGANIZATIONS.get():
       email = models.EmailField(_t('email address'), unique=True)
       token = models.CharField(_t('token'), max_length=128, default=None, null=True)
       customer_id = models.CharField(_t('Customer id'), max_length=128, default=None, null=True)
-      organization = models.ForeignKey(Organization, on_delete=models.CASCADE, default=None)
+      organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
       USERNAME_FIELD = 'email'
       REQUIRED_FIELDS = []
@@ -314,7 +314,11 @@ def get_default_user_group(**kwargs):
   if default_user_group is None:
     return None
 
-  group, created = Group.objects.get_or_create(name=default_user_group)
+  if ENABLE_ORGANIZATIONS.get():
+    group, created = Group.objects.get_or_create(name=default_user_group, organization=default_organization())
+  else:
+    group, created = Group.objects.get_or_create(name=default_user_group)
+
   if created:
     group.save()
 
@@ -351,7 +355,7 @@ def update_app_permissions(**kwargs):
 
     updated = 0
     uptodate = 0
-    added = [ ]
+    added = []
 
     for app_obj in appmanager.DESKTOP_APPS:
       app = app_obj.name
