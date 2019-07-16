@@ -53,7 +53,7 @@ from desktop.redaction import global_redaction_engine
 from desktop.settings import DOCUMENT2_SEARCH_MAX_LENGTH
 
 if ENABLE_ORGANIZATIONS.get():
-  from useradmin.models import OrganizationUser as User, OrganizationGroup as Group
+  from useradmin.models2 import OrganizationUser as User, OrganizationGroup as Group
 else:
   from django.contrib.auth.models import User, Group
 
