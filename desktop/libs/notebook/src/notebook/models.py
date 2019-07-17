@@ -25,19 +25,23 @@ import uuid
 
 from datetime import timedelta
 
-from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
 from django.db.models import Count
 from django.db.models.functions import Trunc
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
 
-from desktop.conf import has_connectors
+from desktop.conf import has_connectors, ENABLE_ORGANIZATIONS
 from desktop.lib.i18n import smart_unicode
 from desktop.lib.paths import SAFE_CHARACTERS_URI
 from desktop.models import Document2
 
 from notebook.connectors.base import Notebook, get_interpreter
+
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User
+else:
+  from django.contrib.auth.models import User
 
 
 LOG = logging.getLogger(__name__)

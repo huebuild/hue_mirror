@@ -23,9 +23,15 @@ import re
 import json
 
 import django.test.client
-from django.contrib.auth.models import User, Group
-
 import nose.tools
+
+from desktop.conf import ENABLE_ORGANIZATIONS
+
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User, OrganizationGroup as Group, default_organization
+else:
+  from django.contrib.auth.models import User, Group
+
 
 class Client(django.test.client.Client):
   """
@@ -85,12 +91,12 @@ def compact_whitespace(s):
   Also removes leading and trailing whitespce.
   """
   return _MULTI_WHITESPACE.sub(" ", s).strip()
-  
+
 def assert_equal_mod_whitespace(first, second, msg=None):
   """
   Asserts that two strings are equal, ignoring whitespace.
   """
-  nose.tools.assert_equal(compact_whitespace(first), 
+  nose.tools.assert_equal(compact_whitespace(first),
     compact_whitespace(second), msg)
 
 def assert_similar_pages(first, second, ratio=0.9, msg=None):

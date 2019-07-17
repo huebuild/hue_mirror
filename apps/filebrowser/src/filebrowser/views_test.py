@@ -39,14 +39,15 @@ from avro import schema, datafile, io
 
 from aws.s3.s3fs import S3FileSystemException
 from aws.s3.s3test_utils import get_test_bucket
-from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.encoding import smart_str
+from django.utils.translation import ugettext_lazy as _
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
 from nose.tools import assert_true, assert_false, assert_equal, assert_not_equal, assert_raises,\
   assert_greater
 
+from desktop.conf import ENABLE_ORGANIZATIONS
 from desktop.lib.django_test_util import make_logged_in_client
 from desktop.lib.test_utils import grant_access, add_to_group, add_permission, remove_from_group
 from desktop.lib.view_util import location_to_url
@@ -58,12 +59,15 @@ from filebrowser.lib.rwx import expand_mode
 from filebrowser.views import snappy_installed
 from desktop.conf import is_oozie_enabled
 
-
-
 if sys.version_info[0] > 2:
   from urllib.parse import unquote as urllib_unquote
 else:
   from urllib import unquote as urllib_unquote
+
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User, OrganizationGroup as Group, default_organization
+else:
+  from django.contrib.auth.models import User, Group
 
 
 LOG = logging.getLogger(__name__)
@@ -981,7 +985,7 @@ alert("XSS")
   def test_compress_hdfs_files(self):
     if not is_oozie_enabled():
       raise SkipTest
-    
+
     def make_and_test_dir(pre, test_direct):
       test_dir = pre + "/" + test_direct
       test_file = test_dir + '/test.txt'
@@ -991,12 +995,12 @@ alert("XSS")
       for i in range(3):
         f = self.cluster.fs.open(test_file + "%s" %i, "w")
         f.close()
-        
+
       resp = self.c.post('/filebrowser/compress_files', {'upload_path': pre, 'files[]': [test_direct], 'archive_name': 'test_compress.zip'})
       response = json.loads(resp.content)
       assert_equal(0, response['status'], response)
       assert_true('handle' in response and response['handle']['id'], response)
-      responseid = '"' + response['handle']['id'] + '"' 
+      responseid = '"' + response['handle']['id'] + '"'
       timeout_time = time() + 25
       end_time = time()
       while timeout_time > end_time:
@@ -1004,16 +1008,16 @@ alert("XSS")
         response2 = json.loads(resp2.content)
         if response2['app']['status'] != 'RUNNING':
           assert_equal(response2['app']['status'] , 'SUCCEEDED', response2)
-          break 
+          break
         sleep(3)
         end_time = time()
       assert_greater(timeout_time, end_time, response)
-        
-        
+
+
     ENABLE_EXTRACT_UPLOADED_ARCHIVE.set_for_testing(True)
     prefix = self.cluster.fs_prefix + '/test_compress_files'
     self.cluster.fs.mkdir(prefix)
-    
+
     try:
       make_and_test_dir(prefix, 'testdir')
       make_and_test_dir(prefix, 'test dir1')
@@ -1022,7 +1026,7 @@ alert("XSS")
     finally:
       ENABLE_EXTRACT_UPLOADED_ARCHIVE.set_for_testing(False)
       cleanup_tree(self.cluster, prefix)
-      
+
 
   def test_extract_tgz(self):
     ENABLE_EXTRACT_UPLOADED_ARCHIVE.set_for_testing(True)

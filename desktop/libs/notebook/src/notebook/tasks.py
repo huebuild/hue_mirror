@@ -29,12 +29,12 @@ from celery import states
 
 from django.core.cache import caches
 from django.core.files.storage import get_storage_class
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.http import FileResponse, HttpRequest
 
 from beeswax import data_export
 from desktop.auth.backend import rewrite_user
+from desktop.conf import ENABLE_ORGANIZATIONS
 from desktop.celery import app
 from desktop.conf import TASK_SERVER
 from desktop.lib import export_csvxls
@@ -43,6 +43,11 @@ from desktop.settings import CACHES_CELERY_KEY, CACHES_CELERY_QUERY_RESULT_KEY
 
 from notebook.connectors.base import get_api, QueryExpired, ExecutionWrapper
 from notebook.sql_utils import get_current_statement
+
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User
+else:
+  from django.contrib.auth.models import User
 
 
 LOG_TASK = get_task_logger(__name__)

@@ -34,16 +34,13 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_not_equal
 from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.conf.urls import url
-from django.contrib.auth.models import User
 from django.db import connection
 from django.urls import reverse
 from django.http import HttpResponse
 from django.db.models import query, CharField, SmallIntegerField
-
 from configobj import ConfigObj
 
 from settings import DATABASES
-
 from beeswax.conf import HIVE_SERVER_HOST
 from pig.models import PigScript
 from useradmin.models import GroupPermission
@@ -55,6 +52,7 @@ import desktop.redaction as redaction
 import desktop.views as views
 
 from desktop.appmanager import DESKTOP_APPS
+from desktop.conf import ENABLE_ORGANIZATIONS
 from desktop.lib.django_test_util import make_logged_in_client
 from desktop.lib.conf import validate_path
 from desktop.lib.django_util import TruncatingModel
@@ -70,7 +68,14 @@ from desktop.views import check_config, home, generate_configspec, load_confs, c
 from desktop.auth.backend import rewrite_user
 from dashboard.conf import HAS_SQL_ENABLED
 
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User
+else:
+  from django.contrib.auth.models import User
+
+
 LOG = logging.getLogger(__name__)
+
 
 def test_home():
   c = make_logged_in_client(username="test_home", groupname="test_home", recreate=True, is_superuser=False)

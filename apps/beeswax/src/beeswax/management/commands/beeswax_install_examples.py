@@ -22,11 +22,10 @@ import pwd
 import json
 
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 
 from desktop.lib.exceptions_renderable import PopupException
-from desktop.conf import USE_NEW_EDITOR
+from desktop.conf import USE_NEW_EDITOR, ENABLE_ORGANIZATIONS
 from desktop.models import Directory, Document, Document2, Document2Permission
 from hadoop import cluster
 from notebook.models import import_saved_beeswax_query
@@ -37,6 +36,11 @@ from beeswax.models import SavedQuery, HQL, IMPALA
 from beeswax.design import hql_query
 from beeswax.server import dbms
 from beeswax.server.dbms import get_query_server_config, QueryServerException
+
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User
+else:
+  from django.contrib.auth.models import User
 
 
 LOG = logging.getLogger(__name__)
@@ -76,7 +80,7 @@ class Command(BaseCommand):
 
     if exception is not None:
       pretty_msg = None
-      
+
       if "AlreadyExistsException" in exception.message:
         pretty_msg = _("SQL table examples already installed.")
       if "Permission denied" in exception.message:
@@ -84,7 +88,7 @@ class Command(BaseCommand):
 
       if pretty_msg is not None:
         raise PopupException(pretty_msg)
-      else: 
+      else:
         raise exception
 
   def _install_tables(self, django_user, app_name, db_name, tables):

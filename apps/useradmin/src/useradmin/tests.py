@@ -30,7 +30,6 @@ import urllib.request, urllib.parse, urllib.error
 from nose.plugins.skip import SkipTest
 from nose.tools import assert_true, assert_equal, assert_false, assert_not_equal
 from datetime import datetime
-from django.contrib.auth.models import User, Group
 from django.contrib.sessions.models import Session
 from django.db.models import Q
 from django.utils.encoding import smart_unicode
@@ -38,6 +37,8 @@ from django.urls import reverse
 from django.test.client import Client
 
 import desktop.conf
+from desktop.auth.backend import is_admin
+from desktop.conf import ENABLE_ORGANIZATIONS
 from desktop.lib.django_test_util import make_logged_in_client
 from desktop.lib.test_utils import grant_access
 from desktop.views import home
@@ -52,7 +53,10 @@ from useradmin.models import HuePermission, GroupPermission, UserProfile
 from useradmin.models import get_profile, get_default_user_group
 from useradmin.hue_password_policy import reset_password_policy
 
-from desktop.auth.backend import is_admin
+if ENABLE_ORGANIZATIONS.get():
+  from useradmin.models2 import OrganizationUser as User, OrganizationGroup as Group
+else:
+  from django.contrib.auth.models import User, Group
 
 
 def reset_all_users():
