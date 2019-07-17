@@ -34,6 +34,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse, NoReverseMatch
 from django.utils.translation import ugettext as _, ugettext_lazy as _t
+from django_prometheus.models import ExportModelOperationsMixin
 
 from aws.conf import is_enabled as is_s3_enabled, has_s3_access
 from azure.conf import is_adls_enabled, has_adls_access
@@ -45,7 +46,7 @@ from settings import HUE_DESKTOP_VERSION
 
 from desktop import appmanager
 from desktop.auth.backend import is_admin
-from desktop.conf import get_clusters, CLUSTER_ID, IS_MULTICLUSTER_ONLY, IS_EMBEDDED, IS_K8S_ONLY, ENABLE_ORGANIZATIONS
+from desktop.conf import get_clusters, CLUSTER_ID, IS_MULTICLUSTER_ONLY, IS_EMBEDDED, IS_K8S_ONLY, ENABLE_ORGANIZATIONS, ENABLE_PROMETHEUS
 from desktop.lib.i18n import force_unicode
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.lib.paths import get_run_root, SAFE_CHARACTERS_URI_COMPONENTS
@@ -1063,7 +1064,7 @@ class Document2Manager(models.Manager, Document2QueryMixin):
     return home_dir
 
 
-class Document2(models.Model):
+class Document2(models.Model, ExportModelOperationsMixin('documents')):
 
   HOME_DIR = ''
   TRASH_DIR = '.Trash'
