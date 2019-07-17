@@ -69,7 +69,7 @@ from desktop.auth.backend import rewrite_user
 from dashboard.conf import HAS_SQL_ENABLED
 
 if ENABLE_ORGANIZATIONS.get():
-  from useradmin.models2 import OrganizationUser as User
+  from useradmin.models import User
 else:
   from django.contrib.auth.models import User
 

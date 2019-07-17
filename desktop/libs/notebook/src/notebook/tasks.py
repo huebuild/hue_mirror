@@ -45,7 +45,7 @@ from notebook.connectors.base import get_api, QueryExpired, ExecutionWrapper
 from notebook.sql_utils import get_current_statement
 
 if ENABLE_ORGANIZATIONS.get():
-  from useradmin.models2 import OrganizationUser as User
+  from useradmin.models import User
 else:
   from django.contrib.auth.models import User
 

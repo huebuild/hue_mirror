@@ -39,7 +39,7 @@ from desktop.models import Document2
 from notebook.connectors.base import Notebook, get_interpreter
 
 if ENABLE_ORGANIZATIONS.get():
-  from useradmin.models2 import OrganizationUser as User
+  from useradmin.models import User
 else:
   from django.contrib.auth.models import User
 

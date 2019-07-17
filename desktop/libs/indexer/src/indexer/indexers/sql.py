@@ -25,7 +25,7 @@ from desktop.lib import django_mako
 from notebook.models import make_notebook
 
 if ENABLE_ORGANIZATIONS.get():
-  from useradmin.models2 import OrganizationUser as User
+  from useradmin.models import User
 else:
   from django.contrib.auth.models import User
 
