@@ -589,7 +589,7 @@ class AutocompleteResults {
         Object.keys(self.parseResult.suggestColRefKeywords).forEach(typeForKeywords => {
           if (
             SqlFunctions.matchesType(
-              self.snippet.type(),
+              self.snippet.dialect(),
               [typeForKeywords],
               [colRef.type.toUpperCase()]
             )
@@ -684,7 +684,7 @@ class AutocompleteResults {
     const self = this;
     if (self.parseResult.suggestSetOptions) {
       const suggestions = [];
-      SqlSetOptions.suggestOptions(self.snippet.type(), suggestions, CATEGORIES.OPTION);
+      SqlSetOptions.suggestOptions(self.snippet.dialect(), suggestions, CATEGORIES.OPTION);
       self.appendEntries(suggestions);
     }
   }
@@ -701,7 +701,7 @@ class AutocompleteResults {
 
         colRefDeferred.done(colRef => {
           const functionsToSuggest = SqlFunctions.getFunctionsWithReturnTypes(
-            self.snippet.type(),
+            self.snippet.dialect(),
             [colRef.type.toUpperCase()],
             self.parseResult.suggestAggregateFunctions || false,
             self.parseResult.suggestAnalyticFunctions || false
@@ -729,7 +729,7 @@ class AutocompleteResults {
       } else {
         const types = self.parseResult.suggestFunctions.types || ['T'];
         const functionsToSuggest = SqlFunctions.getFunctionsWithReturnTypes(
-          self.snippet.type(),
+          self.snippet.dialect(),
           types,
           self.parseResult.suggestAggregateFunctions || false,
           self.parseResult.suggestAnalyticFunctions || false
@@ -773,7 +773,7 @@ class AutocompleteResults {
           databaseSuggestions.push({
             value:
               prefix +
-              sqlUtils.backTickIfNeeded(self.snippet.type(), dbEntry.name) +
+              sqlUtils.backTickIfNeeded(self.snippet.dialect(), dbEntry.name) +
               (suggestDatabases.appendDot ? '.' : ''),
             filterValue: dbEntry.name,
             meta: META_I18n.database,
@@ -832,7 +832,7 @@ class AutocompleteResults {
                     }
                     tableSuggestions.push({
                       value:
-                        prefix + sqlUtils.backTickIfNeeded(self.snippet.type(), tableEntry.name),
+                        prefix + sqlUtils.backTickIfNeeded(self.snippet.dialect(), tableEntry.name),
                       filterValue: tableEntry.name,
                       tableName: tableEntry.name,
                       meta: META_I18n[tableEntry.getType().toLowerCase()],
@@ -851,7 +851,7 @@ class AutocompleteResults {
       };
 
       if (
-        self.snippet.type() === 'impala' &&
+        self.snippet.dialect() === 'impala' &&
         self.parseResult.suggestTables.identifierChain &&
         self.parseResult.suggestTables.identifierChain.length === 1
       ) {
@@ -872,7 +872,7 @@ class AutocompleteResults {
           }
         });
       } else if (
-        self.snippet.type() === 'impala' &&
+        self.snippet.dialect() === 'impala' &&
         self.parseResult.suggestTables.identifierChain &&
         self.parseResult.suggestTables.identifierChain.length > 1
       ) {
@@ -908,7 +908,7 @@ class AutocompleteResults {
           $.when.apply($, columnDeferrals).always(() => {
             AutocompleteResults.mergeColumns(columnSuggestions);
             if (
-              self.snippet.type() === 'hive' &&
+              self.snippet.dialect() === 'hive' &&
               /[^.]$/.test(self.editor().getTextBeforeCursor())
             ) {
               columnSuggestions.push({
@@ -975,7 +975,7 @@ class AutocompleteResults {
                 typeof column.type !== 'undefined' && column.type !== 'COLREF' ? column.type : 'T';
               if (typeof column.alias !== 'undefined') {
                 columnSuggestions.push({
-                  value: sqlUtils.backTickIfNeeded(self.snippet.type(), column.alias),
+                  value: sqlUtils.backTickIfNeeded(self.snippet.dialect(), column.alias),
                   filterValue: column.alias,
                   meta: type,
                   category: CATEGORIES.COLUMN,
@@ -991,7 +991,7 @@ class AutocompleteResults {
               ) {
                 columnSuggestions.push({
                   value: sqlUtils.backTickIfNeeded(
-                    self.snippet.type(),
+                    self.snippet.dialect(),
                     column.identifierChain[column.identifierChain.length - 1].name
                   ),
                   filterValue: column.identifierChain[column.identifierChain.length - 1].name,
@@ -1027,7 +1027,7 @@ class AutocompleteResults {
               typeof column.type !== 'undefined' && column.type !== 'COLREF' ? column.type : 'T';
             if (column.alias) {
               columnSuggestions.push({
-                value: sqlUtils.backTickIfNeeded(self.snippet.type(), column.alias),
+                value: sqlUtils.backTickIfNeeded(self.snippet.dialect(), column.alias),
                 filterValue: column.alias,
                 meta: type,
                 category: CATEGORIES.COLUMN,
@@ -1038,7 +1038,7 @@ class AutocompleteResults {
             } else if (column.identifierChain && column.identifierChain.length > 0) {
               columnSuggestions.push({
                 value: sqlUtils.backTickIfNeeded(
-                  self.snippet.type(),
+                  self.snippet.dialect(),
                   column.identifierChain[column.identifierChain.length - 1].name
                 ),
                 filterValue: column.identifierChain[column.identifierChain.length - 1].name,
@@ -1072,19 +1072,19 @@ class AutocompleteResults {
                   .getChildren({ silenceErrors: true, cancellable: true })
                   .done(childEntries => {
                     childEntries.forEach(childEntry => {
-                      let name = sqlUtils.backTickIfNeeded(self.snippet.type(), childEntry.name);
+                      let name = sqlUtils.backTickIfNeeded(self.snippet.dialect(), childEntry.name);
                       if (
-                        self.snippet.type() === 'hive' &&
+                        self.snippet.dialect() === 'hive' &&
                         (childEntry.isArray() || childEntry.isMap())
                       ) {
                         name += '[]';
                       }
                       if (
-                        SqlFunctions.matchesType(self.snippet.type(), types, [
+                        SqlFunctions.matchesType(self.snippet.dialect(), types, [
                           childEntry.getType().toUpperCase()
                         ]) ||
                         SqlFunctions.matchesType(
-                          self.snippet.type(),
+                          self.snippet.dialect(),
                           [childEntry.getType().toUpperCase()],
                           types
                         ) ||
@@ -1110,7 +1110,7 @@ class AutocompleteResults {
                       }
                     });
                     if (
-                      self.snippet.type() === 'hive' &&
+                      self.snippet.dialect() === 'hive' &&
                       (dataCatalogEntry.isArray() || dataCatalogEntry.isMap())
                     ) {
                       // Remove 'item' or 'value' and 'key' for Hive
@@ -1124,7 +1124,7 @@ class AutocompleteResults {
                       (sourceMeta.value && sourceMeta.value.fields) ||
                       (sourceMeta.item && sourceMeta.item.fields);
                     if (
-                      (self.snippet.type() === 'impala' || self.snippet.type() === 'hive') &&
+                      (self.snippet.dialect() === 'impala' || self.snippet.dialect() === 'hive') &&
                       complexExtras
                     ) {
                       complexExtras.forEach(field => {
@@ -1401,7 +1401,7 @@ class AutocompleteResults {
       if (paths.length) {
         dataCatalog
           .getMultiTableEntry({
-            sourceType: self.snippet.type(),
+            sourceType: self.snippet.dialect(),
             namespace: self.snippet.namespace(),
             compute: self.snippet.compute(),
             paths: paths
@@ -1464,13 +1464,13 @@ class AutocompleteResults {
                             self.convertNavOptQualifiedIdentifier(
                               joinColPair.columns[0],
                               suggestJoins.tables,
-                              self.snippet.type()
+                              self.snippet.dialect()
                             ) +
                             ' = ' +
                             self.convertNavOptQualifiedIdentifier(
                               joinColPair.columns[1],
                               suggestJoins.tables,
-                              self.snippet.type()
+                              self.snippet.dialect()
                             );
                           first = false;
                         });
@@ -1673,7 +1673,7 @@ class AutocompleteResults {
                       });
                       totalCount += value.totalQueryCount;
                       value.function = SqlFunctions.findFunction(
-                        self.snippet.type(),
+                        self.snippet.dialect(),
                         value.aggregateFunction
                       );
                       aggregateFunctionsSuggestions.push({
@@ -2142,7 +2142,7 @@ class AutocompleteResults {
     return navOptColumn.columnName;
   }
 
-  convertNavOptQualifiedIdentifier(qualifiedIdentifier, tables, type) {
+  convertNavOptQualifiedIdentifier(qualifiedIdentifier, tables, dialect) {
     const self = this;
     const aliases = [];
     let tablesHasDefaultDatabase = false;
@@ -2188,7 +2188,7 @@ class AutocompleteResults {
     ) {
       return qualifiedIdentifier.substring(self.activeDatabase.length + 1);
     }
-    if (type === 'hive') {
+    if (dialect === 'hive') {
       // Remove DB reference if given for Hive
       const parts = qualifiedIdentifier.split('.');
       if (parts.length > 2) {
@@ -2245,7 +2245,7 @@ class AutocompleteResults {
               .getSourceMeta({ silenceErrors: true, cancellable: true })
               .done(sourceMeta => {
                 if (
-                  self.snippet.type() === 'hive' &&
+                  self.snippet.dialect() === 'hive' &&
                   typeof sourceMeta.extended_columns !== 'undefined' &&
                   sourceMeta.extended_columns.length === 1 &&
                   /^(?:map|array|struct)/i.test(sourceMeta.extended_columns[0].type)
@@ -2276,7 +2276,10 @@ class AutocompleteResults {
 
     // For Hive it could be either:
     // SELECT col.struct FROM db.tbl -or- SELECT col.struct FROM tbl
-    if (path.length > 1 && (self.snippet.type() === 'impala' || self.snippet.type() === 'hive')) {
+    if (
+      path.length > 1 &&
+      (self.snippet.dialect() === 'impala' || self.snippet.dialect() === 'hive')
+    ) {
       dataCatalog
         .getEntry({
           sourceType: self.snippet.type(),

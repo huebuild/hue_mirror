@@ -27,8 +27,21 @@ import Notebook from 'apps/notebook/notebook';
 import Snippet from 'apps/notebook/snippet';
 
 class EditorViewModel {
-  constructor(editor_id, notebooks, options, CoordinatorEditorViewModel, RunningCoordinatorModel) {
+  constructor(
+    editor_id,
+    notebooks,
+    options,
+    CoordinatorEditorViewModel,
+    RunningCoordinatorModel,
+    clusterConfig
+  ) {
     const self = this;
+
+    self.clusterConfig = clusterConfig;
+
+    huePubSub.subscribe('cluster.config.set.config', newConfig => {
+      self.clusterConfig = newConfig;
+    });
 
     self.URLS = {
       editor: '/hue/editor',
@@ -55,7 +68,7 @@ class EditorViewModel {
       const _notebook = self.selectedNotebook();
       const _newSnippets = [];
 
-      if (self.editorType() != 'notebook') {
+      if (self.editorType() !== 'notebook') {
         self.editorType('notebook');
         self.preEditorTogglingSnippet(_notebook.snippets()[0]);
         const _variables = _notebook.snippets()[0].variables();
@@ -305,13 +318,13 @@ class EditorViewModel {
     huePubSub.subscribe('context.panel.visible.editor', self.isContextPanelVisible);
 
     huePubSub.subscribe(
-      'get.active.snippet.type',
+      'get.active.snippet.dialect',
       callback => {
         withActiveSnippet(activeSnippet => {
           if (callback) {
-            callback(activeSnippet.type());
+            callback(activeSnippet.dialect());
           } else {
-            huePubSub.publish('set.active.snippet.type', activeSnippet.type());
+            huePubSub.publish('set.active.snippet.dialect', activeSnippet.dialect());
           }
         });
       },
@@ -566,6 +579,7 @@ class EditorViewModel {
                 self.editorType(data.document.type.substring('query-'.length));
                 huePubSub.publish('active.snippet.type.changed', {
                   type: self.editorType(),
+                  dialect: self.getDialectFromType(self.editorType()),
                   isSqlDialect: self.getSnippetViewSettings(self.editorType()).sqlDialect
                 });
                 self.changeURL(
@@ -590,8 +604,9 @@ class EditorViewModel {
     };
 
     self.newNotebook = function(editorType, callback, queryTab) {
-      huePubSub.publish('active.snippet.type.changed', {
+      huePubSub.publish('active.snippet.changed', {
         type: editorType,
+        dialect: self.getDialectFromType(editorType),
         isSqlDialect: editorType ? self.getSnippetViewSettings(editorType).sqlDialect : undefined
       });
       $.post(
@@ -616,6 +631,7 @@ class EditorViewModel {
             }
             huePubSub.publish('active.snippet.type.changed', {
               type: editorType,
+              dialect: self.getDialectFromType(editorType),
               isSqlDialect: editorType
                 ? self.getSnippetViewSettings(editorType).sqlDialect
                 : undefined
@@ -667,6 +683,17 @@ class EditorViewModel {
         }
       });
     };
+  }
+
+  getDialectFromType(type) {
+    let result = undefined;
+    this.clusterConfig.app_config.editor.interpreters.some(interpreter => {
+      if (interpreter.type === type) {
+        result = interpreter.dialect;
+        return true;
+      }
+    });
+    return result;
   }
 
   prepareShareModal() {

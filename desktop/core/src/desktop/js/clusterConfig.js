@@ -53,14 +53,19 @@ class ClusterConfig {
           if (data.status === 0) {
             resolve(data);
           } else {
-            $(document).trigger('error', data.message);
-            reject();
+            reject(data);
           }
         })
         .fail(reject);
     });
 
-    this.lastClusterConfigPromise.then(callback || publishConfig).catch(callback || publishConfig);
+    this.lastClusterConfigPromise.then(callback || publishConfig).catch(error => {
+      if (error && error.message) {
+        $(document).trigger('error', error.message);
+      } else {
+        $(document).trigger('error', 'Could not load cluster config. See log for details.');
+      }
+    });
 
     return this.lastClusterConfigPromise;
   }

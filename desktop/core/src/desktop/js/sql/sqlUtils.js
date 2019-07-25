@@ -787,23 +787,23 @@ const resolveCatalogEntry = options => {
 
 export default {
   autocompleteFilter: autocompleteFilter,
-  backTickIfNeeded: (sourceType, identifier) => {
+  backTickIfNeeded: (dialect, identifier) => {
     if (identifier.indexOf('`') === 0) {
       return identifier;
     }
     const upperIdentifier = identifier.toUpperCase();
     if (
-      sourceType === 'hive' &&
+      dialect === 'hive' &&
       (hiveReservedKeywords[upperIdentifier] || extraHiveReservedKeywords[upperIdentifier])
     ) {
       return '`' + identifier + '`';
     }
-    if (sourceType === 'impala' && impalaReservedKeywords[upperIdentifier]) {
+    if (dialect === 'impala' && impalaReservedKeywords[upperIdentifier]) {
       return '`' + identifier + '`';
     }
     if (
-      sourceType !== 'impala' &&
-      sourceType !== 'hive' &&
+      dialect !== 'impala' &&
+      dialect !== 'hive' &&
       (impalaReservedKeywords[upperIdentifier] ||
         hiveReservedKeywords[upperIdentifier] ||
         extraHiveReservedKeywords[upperIdentifier])

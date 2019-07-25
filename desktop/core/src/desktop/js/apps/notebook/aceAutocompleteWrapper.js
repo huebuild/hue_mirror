@@ -39,7 +39,7 @@ class AceAutocompleteWrapper {
         timeout: options.timeout
       });
     };
-    self.snippet.type.subscribe(() => {
+    self.snippet.dialect.subscribe(() => {
       initializeAutocompleter();
     });
     initializeAutocompleter();

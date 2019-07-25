@@ -410,8 +410,6 @@ class AceLocationHandler {
               data: token.syntaxError,
               editor: self.editor,
               range: range,
-              sourceType: self.snippet.type(),
-              defaultDatabase: self.snippet.database(),
               source: source
             });
           }
@@ -690,7 +688,7 @@ class AceLocationHandler {
     const self = this;
     if (
       self.sqlSyntaxWorkerSub !== null &&
-      (self.snippet.type() === 'impala' || self.snippet.type() === 'hive')
+      (self.snippet.dialect() === 'impala' || self.snippet.dialect() === 'hive')
     ) {
       const AceRange = ace.require('ace/range').Range;
       const editorChangeTime = self.editor.lastChangeTime;
@@ -720,6 +718,7 @@ class AceLocationHandler {
         beforeCursor: beforeCursor,
         afterCursor: afterCursor,
         statementLocation: statementLocation,
+        dialect: self.snippet.dialect(),
         type: self.snippet.type()
       });
     }
@@ -1082,7 +1081,7 @@ class AceLocationHandler {
               const uniqueValues = [];
               for (let i = 0; i < possibleValues.length; i++) {
                 possibleValues[i].name = sqlUtils.backTickIfNeeded(
-                  self.snippet.type(),
+                  self.snippet.dialect(),
                   possibleValues[i].name
                 );
                 const nameLower = possibleValues[i].name.toLowerCase();
@@ -1232,7 +1231,7 @@ class AceLocationHandler {
           // The parser isn't aware of the DDL so sometimes it marks complex columns as tables
           // I.e. "Impala SELECT a FROM b.c" Is 'b' a database or a table? If table then 'c' is complex
           if (
-            self.snippet.type() === 'impala' &&
+            self.snippet.dialect() === 'impala' &&
             location.identifierChain.length > 2 &&
             (location.type === 'table' || location.type === 'column') &&
             self.isDatabase(location.identifierChain[0].name)
@@ -1305,7 +1304,7 @@ class AceLocationHandler {
         }
       });
 
-      if (self.snippet.type() === 'impala' || self.snippet.type() === 'hive') {
+      if (self.snippet.dialect() === 'impala' || self.snippet.dialect() === 'hive') {
         self.verifyExists(tokensToVerify, e.data.activeStatementLocations);
       }
       huePubSub.publish('editor.active.locations', lastKnownLocations);
@@ -1331,6 +1330,7 @@ class AceLocationHandler {
               id: self.snippet.id(),
               statementDetails: statementDetails,
               type: self.snippet.type(),
+              dialect: self.snippet.dialect(),
               namespace: self.snippet.namespace(),
               compute: self.snippet.compute(),
               defaultDatabase: self.snippet.database()

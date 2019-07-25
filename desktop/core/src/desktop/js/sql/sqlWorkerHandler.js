@@ -102,7 +102,7 @@ export default {
         } else {
           if (e.data.locations) {
             e.data.locations.forEach(location => {
-              attachEntryResolver(location, e.data.sourceType, e.data.namespace, e.data.compute);
+              attachEntryResolver(location, e.data.dialect, e.data.namespace, e.data.compute);
             });
           }
           huePubSub.publish('ace.sql.location.worker.message', e);

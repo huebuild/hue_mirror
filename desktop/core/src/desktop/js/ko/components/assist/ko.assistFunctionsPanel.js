@@ -27,7 +27,7 @@ const TEMPLATE = `
     <div class="assist-flex-panel">
       <div class="assist-flex-header">
         <div class="assist-inner-header">
-          <div class="function-dialect-dropdown" data-bind="component: { name: 'hue-drop-down', params: { fixedPosition: true, value: activeType, entries: availableTypes, linkTitle: '${I18n(
+          <div class="function-dialect-dropdown" data-bind="component: { name: 'hue-drop-down', params: { fixedPosition: true, value: activeDialect, entries: availableDialects, linkTitle: '${I18n(
             'Selected dialect'
           )}' } }" style="display: inline-block"></div>
         </div>
@@ -83,16 +83,16 @@ class AssistFunctionsPanel {
     this.categories = {};
     this.disposals = [];
 
-    this.activeType = ko.observable();
-    this.availableTypes = ko.observableArray();
+    this.activeDialect = ko.observable();
+    this.availableDialects = ko.observableArray();
 
     this.query = ko.observable().extend({ rateLimit: 400 });
     this.selectedFunction = ko.observable();
 
-    const selectedFunctionPerType = {};
+    const selectedFunctionPerDialect = {};
     this.selectedFunction.subscribe(newFunction => {
       if (newFunction) {
-        selectedFunctionPerType[this.activeType()] = newFunction;
+        selectedFunctionPerDialect[this.activeDialect()] = newFunction;
         if (!newFunction.category.open()) {
           newFunction.category.open(true);
         }
@@ -144,19 +144,19 @@ class AssistFunctionsPanel {
       return result;
     });
 
-    this.activeType.subscribe(newType => {
-      if (newType) {
-        this.selectedFunction(selectedFunctionPerType[newType]);
-        this.activeCategories(this.categories[newType]);
-        apiHelper.setInTotalStorage('assist', 'function.panel.active.type', newType);
+    this.activeDialect.subscribe(newDialect => {
+      if (newDialect) {
+        this.selectedFunction(selectedFunctionPerDialect[newDialect]);
+        this.activeCategories(this.categories[newDialect]);
+        apiHelper.setInTotalStorage('assist', 'function.panel.active.dialect', newDialect);
       }
     });
 
-    const updateType = type => {
-      this.availableTypes().every(availableType => {
-        if (availableType.toLowerCase() === type) {
-          if (this.activeType() !== availableType) {
-            this.activeType(availableType);
+    const updateDialect = dialect => {
+      this.availableDialects().every(availableDialect => {
+        if (availableDialect.toLowerCase() === dialect) {
+          if (this.activeDialect() !== availableDialect) {
+            this.activeDialect(availableDialect);
           }
           return false;
         }
@@ -164,52 +164,58 @@ class AssistFunctionsPanel {
       });
     };
 
-    const activeSnippetTypeSub = huePubSub.subscribe('active.snippet.type.changed', details => {
-      updateType(details.type);
-    });
+    const activeSnippetDialectSub = huePubSub.subscribe(
+      'active.snippet.dialect.changed',
+      details => {
+        updateDialect(details.dialect);
+      }
+    );
 
     const configSub = huePubSub.subscribe('cluster.config.set.config', clusterConfig => {
-      const lastActiveType =
-        this.activeType() || apiHelper.getFromTotalStorage('assist', 'function.panel.active.type');
+      const lastActiveDialect =
+        this.activeDialect() ||
+        apiHelper.getFromTotalStorage('assist', 'function.panel.active.dialect');
       if (
         clusterConfig.app_config &&
         clusterConfig.app_config.editor &&
         clusterConfig.app_config.editor.interpreters
       ) {
-        const typesIndex = {};
+        const dialectIndex = {};
         clusterConfig.app_config.editor.interpreters.forEach(interpreter => {
           if (
-            interpreter.type === 'hive' ||
-            interpreter.type === 'impala' ||
-            interpreter.type === 'pig'
+            interpreter.dialect === 'hive' ||
+            interpreter.dialect === 'impala' ||
+            interpreter.dialect === 'pig'
           ) {
-            typesIndex[interpreter.type] = true;
+            dialectIndex[interpreter.dialect] = true;
           }
         });
-        this.availableTypes(Object.keys(typesIndex).sort());
+        this.availableDialects(Object.keys(dialectIndex).sort());
 
-        this.availableTypes().forEach(type => {
-          this.initFunctions(type);
+        this.availableDialects().forEach(dialect => {
+          this.initFunctions(dialect);
         });
 
-        if (lastActiveType && typesIndex[lastActiveType]) {
-          this.activeType(lastActiveType);
+        if (lastActiveDialect && dialectIndex[lastActiveDialect]) {
+          this.activeDialect(lastActiveDialect);
         } else {
-          this.activeType(this.availableTypes().length ? this.availableTypes()[0] : undefined);
+          this.activeDialect(
+            this.availableDialects().length ? this.availableDialects()[0] : undefined
+          );
         }
       } else {
-        this.availableTypes([]);
+        this.availableDialects([]);
       }
     });
 
     huePubSub.publish('cluster.config.get.config');
 
     this.disposals.push(() => {
-      activeSnippetTypeSub.remove();
+      activeSnippetDialectSub.remove();
       configSub.remove();
     });
 
-    huePubSub.publish('get.active.snippet.type', updateType);
+    huePubSub.publish('get.active.snippet.dialect', updateDialect);
   }
 
   dispose() {

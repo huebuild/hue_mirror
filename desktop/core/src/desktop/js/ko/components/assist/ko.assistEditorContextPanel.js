@@ -201,20 +201,22 @@ class AssistEditorContextPanel {
     this.activeTab = params.activeTab;
 
     this.sourceType = ko.observable(params.sourceType());
+    this.dialect = ko.observable(params.dialect());
 
     this.showRisks = ko.pureComputed(
       () =>
         window.HAS_OPTIMIZER &&
         !this.isSolr() &&
-        (this.sourceType() === 'impala' || this.sourceType() === 'hive')
+        (this.dialect() === 'impala' || this.dialect() === 'hive')
     );
 
-    const typeSub = huePubSub.subscribe('active.snippet.type.changed', details => {
+    const activeSnippetChangedSub = huePubSub.subscribe('active.snippet.changed', details => {
+      this.dialect(details.dialect);
       this.sourceType(details.type);
     });
 
     this.disposals.push(() => {
-      typeSub.remove();
+      activeSnippetChangedSub.remove();
     });
 
     this.uploadingTableStats = ko.observable(false);

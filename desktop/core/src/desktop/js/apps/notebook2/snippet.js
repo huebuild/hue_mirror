@@ -35,7 +35,7 @@ import Session from 'apps/notebook2/session';
 window.ExecutableStatement = ExecutableStatement;
 window.Executor = Executor;
 
-const TYPE = {
+const DIALECT = {
   hive: 'hive',
   impala: 'impala',
   jar: 'jar',
@@ -92,68 +92,68 @@ const COMPATIBILITY_SOURCE_PLATFORMS = {
 };
 
 const COMPATIBILITY_TARGET_PLATFORMS = {
-  hive: { name: 'Hive', value: TYPE.hive },
-  impala: { name: 'Impala', value: TYPE.impala }
+  hive: { name: 'Hive', value: DIALECT.hive },
+  impala: { name: 'Impala', value: DIALECT.impala }
 };
 
-const getDefaultSnippetProperties = function(snippetType) {
+const getDefaultSnippetProperties = function(dialect) {
   const properties = {};
 
-  if (snippetType === TYPE.jar || snippetType === TYPE.py) {
+  if (dialect === DIALECT.jar || dialect === DIALECT.py) {
     properties['driverCores'] = '';
     properties['executorCores'] = '';
     properties['numExecutors'] = '';
     properties['queue'] = '';
     properties['archives'] = [];
     properties['files'] = [];
-  } else if (snippetType === TYPE.java) {
+  } else if (dialect === DIALECT.java) {
     properties['archives'] = [];
     properties['files'] = [];
     properties['capture_output'] = false;
-  } else if (snippetType === TYPE.shell) {
+  } else if (dialect === DIALECT.shell) {
     properties['archives'] = [];
     properties['files'] = [];
-  } else if (snippetType === TYPE.mapreduce) {
+  } else if (dialect === DIALECT.mapreduce) {
     properties['app_jar'] = '';
     properties['hadoopProperties'] = [];
     properties['jars'] = [];
     properties['files'] = [];
     properties['archives'] = [];
-  } else if (snippetType === TYPE.spark2) {
+  } else if (dialect === DIALECT.spark2) {
     properties['app_name'] = '';
     properties['class'] = '';
     properties['jars'] = [];
     properties['spark_opts'] = [];
     properties['spark_arguments'] = [];
     properties['files'] = [];
-  } else if (snippetType === TYPE.sqoop1) {
+  } else if (dialect === DIALECT.sqoop1) {
     properties['files'] = [];
-  } else if (snippetType === TYPE.hive) {
+  } else if (dialect === DIALECT.hive) {
     properties['settings'] = [];
     properties['files'] = [];
     properties['functions'] = [];
     properties['arguments'] = [];
-  } else if (snippetType === TYPE.impala) {
+  } else if (dialect === DIALECT.impala) {
     properties['settings'] = [];
-  } else if (snippetType === TYPE.pig) {
+  } else if (dialect === DIALECT.pig) {
     properties['parameters'] = [];
     properties['hadoopProperties'] = [];
     properties['resources'] = [];
-  } else if (snippetType === TYPE.distcp) {
+  } else if (dialect === DIALECT.distcp) {
     properties['source_path'] = '';
     properties['destination_path'] = '';
-  } else if (snippetType === TYPE.shell) {
+  } else if (dialect === DIALECT.shell) {
     properties['command_path'] = '';
     properties['arguments'] = [];
     properties['env_var'] = [];
     properties['capture_output'] = true;
   }
 
-  if (snippetType === TYPE.jar || snippetType === TYPE.java) {
+  if (dialect === DIALECT.jar || dialect === DIALECT.java) {
     properties['app_jar'] = '';
     properties['class'] = '';
     properties['arguments'] = [];
-  } else if (snippetType === TYPE.py) {
+  } else if (dialect === DIALECT.py) {
     properties['py_file'] = '';
     properties['arguments'] = [];
   }
@@ -172,15 +172,18 @@ class Snippet {
 
     self.id = ko.observable(snippet.id || hueUtils.UUID());
     self.name = ko.observable(snippet.name || '');
-    self.type = ko.observable(snippet.type || TYPE.hive);
-    self.type.subscribe(() => {
-      self.status(STATUS.ready);
+    self.type = ko.observable(snippet.type);
+    self.dialect = ko.observable(vm.getDialectFromType(self.type()));
+
+    self.type.subscribe(newVal => {
+      self.dialect(vm.getDialectFromType(newVal));
+      self.status('ready');
     });
 
     self.isBatchable = ko.pureComputed(
       () =>
-        self.type() === TYPE.hive ||
-        self.type() === TYPE.impala ||
+        self.dialect() === DIALECT.hive ||
+        self.dialect() === DIALECT.impala ||
         self.parentVm.availableLanguages.some(
           language => language.type === self.type() && language.interface === 'oozie'
         )
@@ -212,8 +215,9 @@ class Snippet {
 
     self.inFocus.subscribe(newValue => {
       if (newValue) {
-        huePubSub.publish('active.snippet.type.changed', {
+        huePubSub.publish('active.snippet.changed', {
           type: self.type(),
+          dialect: self.dialect(),
           isSqlDialect: self.isSqlDialect()
         });
       }
@@ -400,7 +404,7 @@ class Snippet {
     self.statusForButtons = ko.observable(STATUS_FOR_BUTTONS.executed);
 
     self.properties = ko.observable(
-      komapping.fromJS(snippet.properties || getDefaultSnippetProperties(self.type()))
+      komapping.fromJS(snippet.properties || getDefaultSnippetProperties(self.dialect()))
     );
     self.hasProperties = ko.pureComputed(
       () => Object.keys(komapping.toJS(self.properties())).length > 0
@@ -417,7 +421,7 @@ class Snippet {
       'beforeChange'
     );
 
-    self.type.subscribe(newValue => {
+    self.dialect.subscribe(newValue => {
       if (typeof previousProperties[newValue] !== 'undefined') {
         self.properties(previousProperties[newValue]);
       } else {
@@ -449,13 +453,13 @@ class Snippet {
     self.variables.subscribe(() => {
       $(document).trigger('updateResultHeaders', self);
     });
-    self.hasCurlyBracketParameters = ko.pureComputed(() => self.type() !== TYPE.pig);
+    self.hasCurlyBracketParameters = ko.pureComputed(() => self.dialect() !== DIALECT.pig);
 
     self.variableNames = ko.pureComputed(() => {
       let match,
         matches = {},
         matchList;
-      if (self.type() === TYPE.pig) {
+      if (self.dialect() === DIALECT.pig) {
         matches = self.getPigParameters();
       } else {
         const re = /(?:^|\W)\${(\w*)=?([^{}]*)}/g;
@@ -1035,7 +1039,7 @@ class Snippet {
         }
       };
 
-      if (self.type() === TYPE.hive || self.type() === TYPE.impala) {
+      if (self.dialect() === DIALECT.hive || self.dialect() === DIALECT.impala) {
         if (self.statement_raw()) {
           window.setTimeout(() => {
             self.checkComplexity();
@@ -1052,14 +1056,15 @@ class Snippet {
       () =>
         (self.statementType() === 'text' &&
           ((self.isSqlDialect() && self.statement() !== '') ||
-            ([TYPE.jar, TYPE.java, TYPE.spark2, TYPE.distcp].indexOf(self.type()) === -1 &&
+            ([DIALECT.jar, DIALECT.java, DIALECT.spark2, DIALECT.distcp].indexOf(self.dialect()) ===
+              -1 &&
               self.statement() !== '') ||
-            ([TYPE.jar, TYPE.java].indexOf(self.type()) !== -1 &&
+            ([DIALECT.jar, DIALECT.java].indexOf(self.dialect()) !== -1 &&
               (self.properties().app_jar() !== '' && self.properties().class() !== '')) ||
-            (TYPE.spark2 === self.type() && self.properties().jars().length > 0) ||
-            (TYPE.shell === self.type() && self.properties().command_path().length > 0) ||
-            (TYPE.mapreduce === self.type() && self.properties().app_jar().length > 0) ||
-            (TYPE.distcp === self.type() &&
+            (DIALECT.spark2 === self.dialect() && self.properties().jars().length > 0) ||
+            (DIALECT.shell === self.dialect() && self.properties().command_path().length > 0) ||
+            (DIALECT.mapreduce === self.dialect() && self.properties().app_jar().length > 0) ||
+            (DIALECT.distcp === self.dialect() &&
               self.properties().source_path().length > 0 &&
               self.properties().destination_path().length > 0))) ||
         (self.statementType() === 'file' && self.statementPath().length > 0) ||
@@ -1184,7 +1189,9 @@ class Snippet {
     self.hasSuggestion(null);
     self.compatibilitySourcePlatform(COMPATIBILITY_SOURCE_PLATFORMS[self.type()]);
     self.compatibilityTargetPlatform(
-      COMPATIBILITY_TARGET_PLATFORMS[self.type() === TYPE.hive ? TYPE.impala : TYPE.hive]
+      COMPATIBILITY_TARGET_PLATFORMS[
+        self.dialect() === DIALECT.hive ? DIALECT.impala : DIALECT.hive
+      ]
     );
     self.queryCompatibility();
   }
@@ -1334,7 +1341,7 @@ class Snippet {
     }
     this.lastExecuted(now);
 
-    if (this.type() === TYPE.impala) {
+    if (this.dialect() === DIALECT.impala) {
       this.showExecutionAnalysis(false);
       huePubSub.publish('editor.clear.execution.analysis');
     }
@@ -1428,7 +1435,7 @@ class Snippet {
 
   fetchExecutionAnalysis() {
     const self = this;
-    if (self.type() === TYPE.impala) {
+    if (self.dialect() === DIALECT.impala) {
       // TODO: Use real query ID
       huePubSub.publish('editor.update.execution.analysis', {
         analysisPossible: true,
@@ -1558,7 +1565,7 @@ class Snippet {
           if (data.status === 0) {
             if (data.result.rows != null) {
               self.result.rows(data.result.rows);
-            } else if (self.type() === TYPE.impala && n > 0) {
+            } else if (self.dialect() === DIALECT.impala && n > 0) {
               setTimeout(() => {
                 self.fetchResultSize(n - 1, query_id);
               }, 1000);

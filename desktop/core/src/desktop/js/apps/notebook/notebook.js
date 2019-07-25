@@ -255,7 +255,7 @@ class Notebook {
 
     self.getSnippets = function(type) {
       return $.grep(self.snippets(), snippet => {
-        return snippet.type() == type;
+        return snippet.type() === type;
       });
     };
 

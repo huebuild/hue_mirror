@@ -27,11 +27,24 @@ import { Notebook } from 'apps/notebook2/notebook';
 import { Snippet } from 'apps/notebook2/snippet';
 
 class EditorViewModel {
-  constructor(editorId, notebooks, options, CoordinatorEditorViewModel, RunningCoordinatorModel) {
+  constructor(
+    editorId,
+    notebooks,
+    options,
+    CoordinatorEditorViewModel,
+    RunningCoordinatorModel,
+    clusterConfig
+  ) {
     const self = this;
 
     // eslint-disable-next-line no-restricted-syntax
     console.log('Notebook 2 enabled.');
+
+    self.clusterConfig = clusterConfig;
+
+    huePubSub.subscribe('cluster.config.set.config', newConfig => {
+      self.clusterConfig = newConfig;
+    });
 
     self.editorId = editorId;
     self.sessionProperties = options.session_properties || [];
@@ -314,6 +327,17 @@ class EditorViewModel {
     $('#combinedContentModal' + self.suffix).modal('show');
   }
 
+  getDialectFromType(type) {
+    let result = undefined;
+    this.clusterConfig.app_config.editor.interpreters.some(interpreter => {
+      if (interpreter.type === type) {
+        result = interpreter.dialect;
+        return true;
+      }
+    });
+    return result;
+  }
+
   getPreviousChartOptions(snippet) {
     return {
       chartLimit: snippet.chartLimit() || snippet.previousChartOptions.chartLimit,
@@ -441,8 +465,9 @@ class EditorViewModel {
 
   newNotebook(editorType, callback, queryTab) {
     const self = this;
-    huePubSub.publish('active.snippet.type.changed', {
+    huePubSub.publish('active.snippet.changed', {
       type: editorType,
+      dialect: self.getDialectFromType(editorType),
       isSqlDialect: editorType ? self.getSnippetViewSettings(editorType).sqlDialect : undefined
     });
     $.post(
@@ -465,8 +490,9 @@ class EditorViewModel {
           if (window.location.getParameter('type') === '') {
             hueUtils.changeURLParameter('type', self.editorType());
           }
-          huePubSub.publish('active.snippet.type.changed', {
+          huePubSub.publish('active.snippet.changed', {
             type: editorType,
+            dialect: self.getDialectFromType(editorType),
             isSqlDialect: editorType
               ? self.getSnippetViewSettings(editorType).sqlDialect
               : undefined
@@ -499,8 +525,9 @@ class EditorViewModel {
           if (typeof skipUrlChange === 'undefined' && !self.isNotificationManager()) {
             if (self.editorMode()) {
               self.editorType(data.document.type.substring('query-'.length));
-              huePubSub.publish('active.snippet.type.changed', {
+              huePubSub.publish('active.snippet.changed', {
                 type: self.editorType(),
+                dialect: self.getDialectFromType(self.editorType()),
                 isSqlDialect: self.getSnippetViewSettings(self.editorType()).sqlDialect
               });
               self.changeURL(

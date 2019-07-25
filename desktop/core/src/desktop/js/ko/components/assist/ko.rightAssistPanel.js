@@ -55,7 +55,7 @@ const TEMPLATE = `
   <!-- ko if: visible -->
   <div class="right-assist-contents">
     <!-- ko if: editorAssistantTabAvailable-->
-    <div data-bind="component: { name: 'assist-editor-context-panel', params: { activeTab: activeTab, sourceType: sourceType } }, visible: activeTab() === 'editorAssistant'"></div>
+    <div data-bind="component: { name: 'assist-editor-context-panel', params: { activeTab: activeTab, sourceType: sourceType, dialect: dialect } }, visible: activeTab() === 'editorAssistant'"></div>
     <!-- /ko -->
 
     <!-- ko if: functionsTabAvailable -->
@@ -82,6 +82,7 @@ class RightAssistPanel {
     this.activeTab = ko.observable();
     this.visible = params.visible;
     this.sourceType = ko.observable();
+    this.dialect = ko.observable();
 
     this.editorAssistantTabAvailable = ko.observable(false);
     this.dashboardAssistantTabAvailable = ko.observable(false);
@@ -140,12 +141,13 @@ class RightAssistPanel {
       }
     };
 
-    const updateContentsForType = (type, isSqlDialect) => {
+    const updateContentsForType = (type, dialect, isSqlDialect) => {
       this.sourceType(type);
+      this.dialect(dialect);
 
       // TODO: Get these dynamically from langref and functions modules when moved to webpack
-      this.functionsTabAvailable(type === 'hive' || type === 'impala' || type === 'pig');
-      this.langRefTabAvailable(type === 'hive' || type === 'impala');
+      this.functionsTabAvailable(dialect === 'hive' || dialect === 'impala' || dialect === 'pig');
+      this.langRefTabAvailable(dialect === 'hive' || dialect === 'impala');
       this.editorAssistantTabAvailable(
         (!window.IS_EMBEDDED || window.EMBEDDED_ASSISTANT_ENABLED) && isSqlDialect
       );
@@ -166,14 +168,14 @@ class RightAssistPanel {
       updateTabs();
     };
 
-    const snippetTypeSub = huePubSub.subscribe('active.snippet.type.changed', details => {
-      updateContentsForType(details.type, details.isSqlDialect);
+    const activeSnippetChangedSub = huePubSub.subscribe('active.snippet.changed', details => {
+      updateContentsForType(details.type, details.dialect, details.isSqlDialect);
     });
-    this.disposals.push(snippetTypeSub.remove.bind(snippetTypeSub));
+    this.disposals.push(activeSnippetChangedSub.remove.bind(activeSnippetChangedSub));
 
     huePubSub.subscribe('set.current.app.name', appName => {
       if (appName === 'dashboard') {
-        updateContentsForType(appName, false);
+        updateContentsForType(appName, 'solr', false);
       }
     });
     huePubSub.publish('get.current.app.name');

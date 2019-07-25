@@ -17,6 +17,7 @@
 import $ from 'jquery';
 import ko from 'knockout';
 
+import clusterConfig from 'clusterConfig';
 import dataCatalog from 'catalog/dataCatalog';
 import EditorViewModel from 'apps/notebook/editorViewModel';
 import componentUtils from './componentUtils';
@@ -32,12 +33,13 @@ const TEMPLATE = `
   </button>
 
   <div class="jobs-panel history-panel" data-bind="visible: historyPanelVisible, style: { 'top' : top, 'left': left }" style="display: none;">
+    <!-- ko if: editorViewModel -->
     <a class="pointer inactive-action pull-right" data-bind="click: function(){ historyPanelVisible(false); }"><i class="fa fa-fw fa-times"></i></a>
-    <!-- ko ifnot: editorViewModel.selectedNotebook() && editorViewModel.selectedNotebook().history().length > 0 -->
+    <!-- ko ifnot: editorViewModel().selectedNotebook() && editorViewModel().selectedNotebook().history().length > 0 -->
       <span style="font-style: italic">${I18n('No task history.')}</span>
     <!-- /ko -->
-    <!-- ko if: editorViewModel.selectedNotebook() && editorViewModel.selectedNotebook().history().length > 0 -->
-    <!-- ko with: editorViewModel.selectedNotebook() -->
+    <!-- ko if: editorViewModel().selectedNotebook() && editorViewModel().selectedNotebook().history().length > 0 -->
+    <!-- ko with: editorViewModel().selectedNotebook() -->
     <div class="notification-history margin-bottom-10">
       <!-- ko if: onSuccessUrl() -->
       <div class="notification-history-title">
@@ -91,7 +93,7 @@ const TEMPLATE = `
       </div>
       <ul class="unstyled notification-history-list">
         <!-- ko foreach: history -->
-        <li data-bind="click: function() { $parents[1].editorViewModel.openNotebook(uuid()); }, css: {'active': $parents[1].editorViewModel.selectedNotebook() !== null && $parents[1].editorViewModel.selectedNotebook().uuid() === uuid() }">
+        <li data-bind="click: function() { $parents[1].editorViewModel().openNotebook(uuid()); }, css: {'active': $parents[1].editorViewModel().selectedNotebook() !== null && $parents[1].editorViewModel().selectedNotebook().uuid() === uuid() }">
           <div class="muted pull-left" data-bind="momentFromNow: {data: lastExecuted, interval: 10000, titleFormat: 'LLL'}"></div>
           <div class="pull-right muted">
             <!-- ko switch: status -->
@@ -128,6 +130,7 @@ const TEMPLATE = `
     <!-- /ko -->
     <!-- /ko -->
     <!-- /ko -->
+    <!-- /ko -->
   </div>
 
   <div id="clearNotificationHistoryModal" class="modal hide fade" data-backdrop="false">
@@ -142,7 +145,7 @@ const TEMPLATE = `
     </div>
     <div class="modal-footer">
       <a class="btn" data-dismiss="modal">${I18n('No')}</a>
-      <a class="btn btn-danger disable-feedback" data-bind="click: function() { editorViewModel.selectedNotebook().clearHistory(); editorViewModel.selectedNotebook(null); }">${I18n(
+      <a class="btn btn-danger disable-feedback" data-bind="click: function() { editorViewModel().selectedNotebook().clearHistory(); editorViewModel().selectedNotebook(null); }">${I18n(
         'Yes'
       )}</a>
     </div>
@@ -167,40 +170,53 @@ class HistoryPanel {
       self.historyPanelVisible(false);
     });
 
-    self.editorViewModel = new EditorViewModel(null, '', {
-      user: window.LOGGED_USERNAME,
-      userId: window.LOGGED_USER_ID,
-      languages: [{ name: 'Java', type: 'java' }, { name: 'Hive SQL', type: 'hive' }], // TODO reuse
-      snippetViewSettings: {
-        hive: {
-          placeHolder: I18n('Example: SELECT * FROM tablename, or press CTRL + space'),
-          aceMode: 'ace/mode/hive',
-          snippetImage: window.STATIC_URLS['beeswax/art/icon_beeswax_48.png'],
-          sqlDialect: true
-        },
-        impala: {
-          placeHolder: I18n('Example: SELECT * FROM tablename, or press CTRL + space'),
-          aceMode: 'ace/mode/impala',
-          snippetImage: window.STATIC_URLS['impala/art/icon_impala_48.png'],
-          sqlDialect: true
-        },
-        java: {
-          snippetIcon: 'fa-file-code-o'
-        },
-        shell: {
-          snippetIcon: 'fa-terminal'
-        },
-        sqoop1: {
-          sqlDialect: false
-        },
-        spark: {
-          sqlDialect: false
-        }
-      }
+    self.editorViewModel = ko.observable();
+
+    clusterConfig.getConfig().then(clusterConfig => {
+      self.editorViewModel(
+        new EditorViewModel(
+          null,
+          '',
+          {
+            user: window.LOGGED_USERNAME,
+            userId: window.LOGGED_USER_ID,
+            languages: [{ name: 'Java', type: 'java' }, { name: 'Hive SQL', type: 'hive' }], // TODO reuse
+            snippetViewSettings: {
+              hive: {
+                placeHolder: I18n('Example: SELECT * FROM tablename, or press CTRL + space'),
+                aceMode: 'ace/mode/hive',
+                snippetImage: window.STATIC_URLS['beeswax/art/icon_beeswax_48.png'],
+                sqlDialect: true
+              },
+              impala: {
+                placeHolder: I18n('Example: SELECT * FROM tablename, or press CTRL + space'),
+                aceMode: 'ace/mode/impala',
+                snippetImage: window.STATIC_URLS['impala/art/icon_impala_48.png'],
+                sqlDialect: true
+              },
+              java: {
+                snippetIcon: 'fa-file-code-o'
+              },
+              shell: {
+                snippetIcon: 'fa-terminal'
+              },
+              sqoop1: {
+                sqlDialect: false
+              },
+              spark: {
+                sqlDialect: false
+              }
+            }
+          },
+          undefined,
+          undefined,
+          clusterConfig
+        )
+      );
+      self.editorViewModel().editorMode(true);
+      self.editorViewModel().isNotificationManager(true);
+      self.editorViewModel().newNotebook();
     });
-    self.editorViewModel.editorMode(true);
-    self.editorViewModel.isNotificationManager(true);
-    self.editorViewModel.newNotebook();
 
     self.$toggleElement;
     const $container = $(HUE_CONTAINER);
@@ -211,27 +227,42 @@ class HistoryPanel {
     };
 
     self.historyRunningJobs = ko.computed(() => {
-      if (self.editorViewModel.selectedNotebook()) {
-        return $.grep(self.editorViewModel.selectedNotebook().history(), task => {
-          return task.status() == 'running';
-        });
+      if (self.editorViewModel() && self.editorViewModel().selectedNotebook()) {
+        return $.grep(
+          self
+            .editorViewModel()
+            .selectedNotebook()
+            .history(),
+          task => {
+            return task.status() == 'running';
+          }
+        );
       } else {
         return [];
       }
     });
     self.historyFinishedJobs = ko.computed(() => {
-      if (self.editorViewModel.selectedNotebook()) {
-        return $.grep(self.editorViewModel.selectedNotebook().history(), task => {
-          return task.status() == 'available' || task.status() == 'failed';
-        });
+      if (self.editorViewModel() && self.editorViewModel().selectedNotebook()) {
+        return $.grep(
+          self
+            .editorViewModel()
+            .selectedNotebook()
+            .history(),
+          task => {
+            return task.status() == 'available' || task.status() == 'failed';
+          }
+        );
       } else {
         return [];
       }
     });
 
     huePubSub.subscribe('notebook.task.submitted', history_id => {
-      self.editorViewModel.openNotebook(history_id, null, true, () => {
-        const notebook = self.editorViewModel.selectedNotebook();
+      if (!self.editorViewModel()) {
+        return;
+      }
+      self.editorViewModel().openNotebook(history_id, null, true, () => {
+        const notebook = self.editorViewModel().selectedNotebook();
         notebook.snippets()[0].progress.subscribe(val => {
           if (val === 100) {
             //self.indexingStarted(false);
@@ -258,7 +289,7 @@ class HistoryPanel {
               if (notebook.onSuccessUrl() === 'assist.db.refresh') {
                 dataCatalog
                   .getEntry({
-                    sourceType: snippet.type(),
+                    sourceType: snippet.dialect(),
                     namespace: snippet.namespace(),
                     compute: snippet.compute(),
                     path: []

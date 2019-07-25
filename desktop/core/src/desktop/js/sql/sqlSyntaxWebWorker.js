@@ -49,7 +49,7 @@ const onMessage = msg => {
   }
   clearTimeout(throttle);
   throttle = setTimeout(() => {
-    sqlParserRepository.getSyntaxParser(msg.data.type).then(parser => {
+    sqlParserRepository.getSyntaxParser(msg.data.dialect).then(parser => {
       const syntaxError = parser.parseSyntax(msg.data.beforeCursor, msg.data.afterCursor);
 
       if (syntaxError) {

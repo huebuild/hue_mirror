@@ -445,7 +445,7 @@ ko.bindingHandlers.aceEditor = {
         const availableSnippets = snippet.availableSnippets;
         let removeFirstLine = false;
         for (let i = 0; i < availableSnippets.length; i++) {
-          if ($.trim(firstLine.substr(1)) === availableSnippets[i].type()) {
+          if ($.trim(firstLine.substr(1)) === availableSnippets[i].dialect()) {
             snippet.type(availableSnippets[i].type());
             removeFirstLine = true;
             break;

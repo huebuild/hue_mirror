@@ -173,16 +173,19 @@ class Snippet {
     self.type = ko.observable(
       typeof snippet.type != 'undefined' && snippet.type != null ? snippet.type : 'hive'
     );
+    self.dialect = ko.observable(vm.getDialectFromType(self.type()));
+
     self.type.subscribe(newVal => {
       self.status('ready');
+      self.dialect(vm.getDialectFromType(newVal));
     });
 
     self.isBatchable = ko.computed(() => {
       return (
-        self.type() == 'hive' ||
-        self.type() == 'impala' ||
+        self.dialect() === 'hive' ||
+        self.dialect() === 'impala' ||
         $.grep(vm.availableLanguages, language => {
-          return language.type == self.type() && language.interface == 'oozie';
+          return language.type == self.dialect() && language.interface == 'oozie';
         }).length > 0
       );
     });
@@ -222,8 +225,9 @@ class Snippet {
 
     self.inFocus.subscribe(newValue => {
       if (newValue) {
-        huePubSub.publish('active.snippet.type.changed', {
+        huePubSub.publish('active.snippet.changed', {
           type: self.type(),
+          dialect: self.dialect(),
           isSqlDialect: self.isSqlDialect()
         });
       }
@@ -1528,7 +1532,7 @@ class Snippet {
         }
       };
 
-      if (self.type() === 'hive' || self.type() === 'impala') {
+      if (self.dialect() === 'hive' || self.dialect() === 'impala') {
         if (self.statement_raw()) {
           window.setTimeout(() => {
             self.checkComplexity();
@@ -1625,15 +1629,17 @@ class Snippet {
       return (
         (self.statementType() == 'text' &&
           ((self.isSqlDialect() && self.statement() !== '') ||
-            (['jar', 'java', 'spark2', 'distcp'].indexOf(self.type()) == -1 &&
+            (['jar', 'java', 'spark2', 'distcp'].indexOf(self.dialect()) == -1 &&
               self.statement() !== '') ||
-            (['jar', 'java'].indexOf(self.type()) != -1 &&
+            (['jar', 'java'].indexOf(self.dialect()) != -1 &&
               (self.properties().app_jar() != '' && self.properties().class() != '')) ||
-            (['spark2'].indexOf(self.type()) != -1 && self.properties().jars().length > 0) ||
-            (['shell'].indexOf(self.type()) != -1 && self.properties().command_path().length > 0) ||
-            (['mapreduce'].indexOf(self.type()) != -1 && self.properties().app_jar().length > 0) ||
-            (['py'].indexOf(self.type()) != -1 && self.properties().py_file().length > 0) ||
-            (['distcp'].indexOf(self.type()) != -1 &&
+            (['spark2'].indexOf(self.dialect()) != -1 && self.properties().jars().length > 0) ||
+            (['shell'].indexOf(self.dialect()) != -1 &&
+              self.properties().command_path().length > 0) ||
+            (['mapreduce'].indexOf(self.dialect()) != -1 &&
+              self.properties().app_jar().length > 0) ||
+            (['py'].indexOf(self.dialect()) != -1 && self.properties().py_file().length > 0) ||
+            (['distcp'].indexOf(self.dialect()) != -1 &&
               self.properties().source_path().length > 0 &&
               self.properties().destination_path().length > 0))) ||
         (self.statementType() == 'file' && self.statementPath().length > 0) ||
@@ -1711,7 +1717,7 @@ class Snippet {
         }
       }
 
-      if (self.type() === 'impala') {
+      if (self.dialect() === 'impala') {
         self.showExecutionAnalysis(false);
         huePubSub.publish('editor.clear.execution.analysis');
       }
@@ -1964,9 +1970,9 @@ class Snippet {
 
     self.checkCompatibility = function() {
       self.hasSuggestion(null);
-      self.compatibilitySourcePlatform(COMPATIBILITY_SOURCE_PLATFORMS[self.type()]);
+      self.compatibilitySourcePlatform(COMPATIBILITY_SOURCE_PLATFORMS[self.dialect()]);
       self.compatibilityTargetPlatform(
-        COMPATIBILITY_TARGET_PLATFORMS[self.type() === 'hive' ? 'impala' : 'hive']
+        COMPATIBILITY_TARGET_PLATFORMS[self.dialect() === 'hive' ? 'impala' : 'hive']
       );
       self.queryCompatibility();
     };
@@ -1975,7 +1981,7 @@ class Snippet {
       apiHelper.cancelActiveRequest(lastCompatibilityRequest);
 
       hueAnalytics.log('notebook', 'compatibility');
-      self.compatibilityCheckRunning(targetPlatform != self.type());
+      self.compatibilityCheckRunning(targetPlatform != self.dialect());
       self.hasSuggestion(null);
       const positionStatement = self.positionStatement();
 
@@ -2056,7 +2062,7 @@ class Snippet {
     self.isFetchingData = false;
 
     self.fetchExecutionAnalysis = function() {
-      if (self.type() === 'impala') {
+      if (self.dialect() === 'impala') {
         // TODO: Use real query ID
         huePubSub.publish('editor.update.execution.analysis', {
           analysisPossible: true,
@@ -2221,7 +2227,7 @@ class Snippet {
             if (data.status == 0) {
               if (data.result.rows != null) {
                 self.result.rows(data.result.rows);
-              } else if (self.type() == 'impala' && n > 0) {
+              } else if (self.dialect() == 'impala' && n > 0) {
                 setTimeout(() => {
                   self.fetchResultSize(n - 1, query_id);
                 }, 1000);
@@ -2527,16 +2533,16 @@ class Snippet {
         '/metadata/api/optimizer/upload/history',
         {
           n: typeof n != 'undefined' ? n : null,
-          sourcePlatform: self.type()
+          sourcePlatform: self.dialect()
         },
         data => {
           if (data.status == 0) {
             $(document).trigger(
               'info',
-              data.upload_history[self.type()].count +
+              data.upload_history[self.dialect()].count +
                 ' queries uploaded successfully. Processing them...'
             );
-            self.watchUploadStatus(data.upload_history[self.type()].status.workloadId);
+            self.watchUploadStatus(data.upload_history[self.dialect()].status.workloadId);
           } else {
             $(document).trigger('error', data.message);
           }
@@ -2547,7 +2553,7 @@ class Snippet {
     self.uploadQuery = function(query_id) {
       $.post('/metadata/api/optimizer/upload/query', {
         query_id: query_id,
-        sourcePlatform: self.type()
+        sourcePlatform: self.dialect()
       });
     };
 
@@ -2565,7 +2571,7 @@ class Snippet {
               return table.databaseName + '.' + table.tableName;
             })
           ),
-          sourcePlatform: komapping.toJSON(self.type()),
+          sourcePlatform: komapping.toJSON(self.dialect()),
           with_ddl: komapping.toJSON(true),
           with_table_stats: komapping.toJSON(true),
           with_columns_stats: komapping.toJSON(true)
@@ -2637,7 +2643,7 @@ class Snippet {
         {
           notebook: komapping.toJSON(notebook.getContext()),
           snippet: komapping.toJSON(self.getContext()),
-          sourcePlatform: self.type()
+          sourcePlatform: self.dialect()
         },
         data => {
           if (data.status == 0) {
