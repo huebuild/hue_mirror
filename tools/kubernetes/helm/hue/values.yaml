@@ -1,7 +1,10 @@
 image:
-   registry: "gethue"
-   tag: "latest"
-   pullPolicy: "IfNotPresent"
+   registry: "localhost:32000"
+   tag: "registry"
+   pullPolicy: "Always"
+   # registry: "gethue"
+   # tag: "latest"
+   # pullPolicy: "IfNotPresent"
 hue:
   replicas: 2
   database:
