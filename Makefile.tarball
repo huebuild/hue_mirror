@@ -35,7 +35,7 @@ PROD_INCLUDES := \
 	webpack-stats*.json \
 	package.json \
 	webpack.config*.js \
-	.babelrc
+	babel.config.js
 
 # Check for things in BDIST_EXCLUDES in various apps
 PROD_EXCLUDES := \
