@@ -30,6 +30,7 @@
 
   from desktop.auth.backend import is_admin
   from webpack_loader.templatetags.webpack_loader import render_bundle
+  from desktop.webpack_utils import get_hue_bundles
 %>
 
 <%namespace name="hueIcons" file="/hue_icons.mako" />
@@ -389,13 +390,9 @@ ${ hueIcons.symbols() }
 </div>
 ${ commonshare() | n,unicode }
 
-${ render_bundle('vendors~hue~notebook~tableBrowser') | n,unicode }
-${ render_bundle('vendors~hue~tableBrowser') | n,unicode }
-${ render_bundle('vendors~hue') | n,unicode }
-${ render_bundle('hue~notebook') | n,unicode }
-${ render_bundle('hue~notebook~tableBrowser') | n,unicode }
-${ render_bundle('hue~tableBrowser') | n,unicode }
-${ render_bundle('hue') | n,unicode }
+% for bundle in get_hue_bundles('hue'):
+  ${ render_bundle(bundle) | n,unicode }
+% endfor
 
 <script src="${ static('desktop/js/polyfills.js') }"></script>
 <script src="${ static('desktop/ext/js/tether.js') }"></script>

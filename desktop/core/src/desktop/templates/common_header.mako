@@ -20,6 +20,7 @@ from desktop import conf
 from desktop.conf import USE_NEW_EDITOR
 from desktop.models import hue_version
 from desktop.lib.i18n import smart_unicode
+from desktop.webpack_utils import get_hue_bundles
 
 from metadata.conf import has_optimizer, OPTIMIZER
 
@@ -133,17 +134,9 @@ if USE_NEW_EDITOR.get():
   <script src="${ static('desktop/js/hue.errorcatcher.js') }"></script>
   % endif
 
-  % if section == "login":
-    ${ render_bundle('login', config='LOGIN') | n,unicode }
-  %else:
-    ${ render_bundle('vendors~hue~notebook~tableBrowser') | n,unicode }
-    ${ render_bundle('vendors~hue~tableBrowser') | n,unicode }
-    ${ render_bundle('vendors~hue') | n,unicode }
-    ${ render_bundle('hue~notebook') | n,unicode }
-    ${ render_bundle('hue~notebook~tableBrowser') | n,unicode }
-    ${ render_bundle('hue~tableBrowser') | n,unicode }
-    ${ render_bundle('hue') | n,unicode }
-  % endif
+  % for bundle in get_hue_bundles('login' if section == 'login' else 'hue', 'LOGIN' if section == 'login' else 'DEFAULT'):
+    ${ render_bundle(bundle) | n,unicode }
+  % endfor
 
   <script src="${ static('desktop/js/bootstrap-tooltip.js') }"></script>
   <script src="${ static('desktop/js/bootstrap-typeahead-touchscreen.js') }"></script>
