@@ -1933,6 +1933,16 @@ class ClusterConfig(object):
         }
       ])
 
+    if TASK_SERVER.ENABLED.get():
+      interpreters.append({
+          'type': 'celery-task',
+          'displayName': _('Tasks'),
+          'buttonName': _('Tasks'),
+          'tooltip': _('Tasks'),
+          'page': '/jobbrowser/'
+        }
+      )
+
     if TASK_SERVER.BEAT_ENABLED.get():
       interpreters.append({
           'type': 'celery-beat',
