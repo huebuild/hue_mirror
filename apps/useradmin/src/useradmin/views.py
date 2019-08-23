@@ -40,7 +40,7 @@ from django.utils.translation import get_language, ugettext as _
 
 import desktop.conf
 from desktop.auth.backend import is_admin
-from desktop.conf import LDAP, ENABLE_ORGANIZATIONS
+from desktop.conf import LDAP, ENABLE_ORGANIZATIONS, AUTH
 from desktop.lib.django_util import JsonResponse, render
 from desktop.lib.exceptions_renderable import PopupException
 from desktop.models import _get_apps
@@ -72,6 +72,9 @@ __groups_lock = threading.Lock()
 def is_ldap_setup():
   return bool(LDAP.LDAP_SERVERS.get()) or LDAP.LDAP_URL.get() is not None
 
+def is_external_user_management():
+  return 'desktop.auth.backend.KnoxSpnegoDjangoBackend' in AUTH.BACKEND.get().split(',')
+
 
 def list_users(request):
   return render("list_users.mako", request, {
@@ -79,7 +82,8 @@ def list_users(request):
       'users_json': json.dumps(list(User.objects.values_list('id', flat=True))),
       'request': request,
       'is_embeddable': request.GET.get('is_embeddable', False),
-      'is_ldap_setup': is_ldap_setup()
+      'is_ldap_setup': is_ldap_setup(),
+      'is_external_user_management': is_external_user_management()
   })
 
 
@@ -88,7 +92,8 @@ def list_groups(request):
       'groups': Group.objects.all(),
       'groups_json': json.dumps(list(Group.objects.values_list('name', flat=True))),
       'is_embeddable': request.GET.get('is_embeddable', False),
-      'is_ldap_setup': is_ldap_setup()
+      'is_ldap_setup': is_ldap_setup(),
+      'is_external_user_management': is_external_user_management()
   })
 
 
@@ -181,6 +186,9 @@ def is_user_locked_out(username):
 
 
 def delete_user(request):
+  if is_external_user_management():
+    raise PopupException(_('User/Group management is external to Hue.'))
+
   if not is_admin(request.user):
     request.audit = {
       'operation': 'DELETE_USER',
@@ -220,6 +228,9 @@ def delete_user(request):
 
 
 def delete_group(request):
+  if is_external_user_management():
+    raise PopupException(_('User/Group management is external to Hue.'))
+
   if not is_admin(request.user):
     request.audit = {
       'operation': 'DELETE_GROUP',
