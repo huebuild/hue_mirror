@@ -378,6 +378,7 @@ def get_logs(request):
 
   return JsonResponse(response)
 
+
 def _save_notebook(notebook, user):
   notebook_type = notebook.get('type', 'notebook')
   save_as = False
