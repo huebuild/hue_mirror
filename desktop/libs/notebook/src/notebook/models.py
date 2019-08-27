@@ -594,8 +594,8 @@ class Analytics(object):
   def query_stats(cls, query_id=None, query=None):
     stats = []
     one_month = datetime.date.today() - timedelta(days=30)
-
     query = Document2.objects.get(id=query_id) if query is None else query
+
     stats.append({
       'name': 'query',
       'value': '%s - %s' % (query_id, query.name),
@@ -612,10 +612,17 @@ class Analytics(object):
       'value': executions.exclude(owner=query.owner).count(),
       'description': _('Executions by others')
     })
-    last_month_daily = executions.filter(last_modified__gte=one_month).annotate(day=Trunc('last_modified', 'day')).values('day').annotate(c=Count('day')).values('day', 'c').order_by('day')
+    last_month_daily = executions.filter(
+        last_modified__gte=one_month
+      ).annotate(
+          day=Trunc('last_modified', 'day')
+      ).values('day').annotate(
+        c=Count('day')
+      ).values('day', 'c').order_by('day')
+
     stats.append({
       'name': 'executions_30_days_histogram',
-      'value': last_month_daily,
+      'value': [(day['day'], day['c']) for day in last_month_daily],
       'description': _('Daily executions 30 days')
     })
     # Could count number of "forks" (but would need to start tracking parent of Saved As query cf. saveAsNotebook)
