@@ -284,8 +284,7 @@ ${ sqlSyntaxDropdown.sqlSyntaxDropdown() }
         <li class="divider"></li>
         <!-- ko if: $root.canSave -->
         <li>
-          <a class="share-link pointer" data-bind="click: prepareShareModal,
-              css: {'isShared': isShared()}">
+          <a class="share-link pointer" data-bind="click: prepareShareModal, css: {'isShared': isShared()}">
             <i class="fa fa-fw fa-users"></i> ${ _('Share') }
           </a>
         </li>
@@ -293,6 +292,11 @@ ${ sqlSyntaxDropdown.sqlSyntaxDropdown() }
         <li>
           <a class="pointer" data-bind="publish: {'context.panel.visible': true}">
             <i class="fa fa-fw fa-cogs"></i> ${ _('Session') }
+          </a>
+        </li>
+        <li>
+          <a class="pointer" data-target="#queryStatsModal${ suffix }" data-toggle="modal" data-bind="click: function() { $root.getQueryStats(selectedNotebook().uuid) }">
+            <i class="fa fa-fw fa-line-chart"></i> ${ _('Stats') }
           </a>
         </li>
         <li>
@@ -1984,6 +1988,7 @@ ${ sqlSyntaxDropdown.sqlSyntaxDropdown() }
   <!-- /ko -->
 </div>
 
+
 <div id="saveToFileModal${ suffix }" class="modal hide fade">
   <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal" aria-label="${ _('Close') }"><span aria-hidden="true">&times;</span></button>
@@ -2028,6 +2033,26 @@ ${ sqlSyntaxDropdown.sqlSyntaxDropdown() }
   <div class="modal-footer">
     <a class="btn" data-dismiss="modal">${_('Cancel')}</a>
     <a class="btn btn-primary disable-feedback" data-dismiss="modal" data-bind="click: function() { $root.selectedNotebook().authSession(); }">${_('Connect')}</a>
+  </div>
+</div>
+
+
+<div id="queryStatsModal${ suffix }" class="modal hide fade">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="${ _('Close') }"><span aria-hidden="true">&times;</span></button>
+    <h2 class="modal-title">${_('Stats')}</h2>
+  </div>
+
+  <div class="modal-body">
+    <div data-bind="foreach: $root.queryStats" class="row-fluid">
+      <span data-bind="text: description"></span>
+      <span data-bind="text: value"></span>
+      </br>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <input type="button" class="btn btn-primary disable-feedback" value="${_('Ok')}" data-dismiss="modal"/>
   </div>
 </div>
 
