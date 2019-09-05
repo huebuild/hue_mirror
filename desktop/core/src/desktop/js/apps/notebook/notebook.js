@@ -177,16 +177,6 @@ class Notebook {
         ? vm.selectedNotebook().history()
         : []
     );
-    self.history.subscribe(val => {
-      if (
-        self.id() == null &&
-        val.length == 0 &&
-        self.historyFilter() === '' &&
-        !vm.isNotificationManager()
-      ) {
-        self.snippets()[0].currentQueryTab('savedQueries');
-      }
-    });
     self.historyFilter = ko.observable('');
     self.historyFilterVisible = ko.observable(false);
     self.historyFilter.extend({ rateLimit: { method: 'notifyWhenChangesStop', timeout: 900 } });
