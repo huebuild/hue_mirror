@@ -1005,8 +1005,11 @@ class Document2Manager(models.Manager, Document2QueryMixin):
 
     return latest_doc
 
-  def get_history(self, user, doc_type, include_trashed=False):
-    return self.documents(user, perms='owned', include_history=True, include_trashed=include_trashed).filter(type=doc_type, is_history=True)
+  def get_history(self, user, doc_type=None, include_trashed=False):
+    history = self.documents(user, perms='owned', include_history=True, include_trashed=include_trashed).filter(is_history=True)
+    if doc_type is not None:
+      history = history.filter(type=doc_type)
+    return history
 
   def get_tasks_history(self, user):
     return self.documents(user, perms='owned', include_history=True, include_trashed=False, include_managed=True).filter(is_history=True, is_managed=True).exclude(name='pig-app-hue-script').exclude(type='oozie-workflow2')
