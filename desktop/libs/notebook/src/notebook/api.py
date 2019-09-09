@@ -378,7 +378,6 @@ def get_logs(request):
 
   return JsonResponse(response)
 
-
 def _save_notebook(notebook, user):
   notebook_type = notebook.get('type', 'notebook')
   save_as = False
@@ -437,7 +436,7 @@ def _clear_sessions(notebook):
 def _historify(notebook, user):
   query_type = notebook['type']
   name = notebook['name'] if (notebook['name'] and notebook['name'].strip() != '') else DEFAULT_HISTORY_NAME
-  is_managed = notebook.get('isManaged') == True # Prevents None
+  is_managed = notebook.get('isManaged') == True  # Prevents None
 
   if is_managed and Document2.objects.filter(uuid=notebook['uuid']).exists():
     history_doc = Document2.objects.get(uuid=notebook['uuid'])

@@ -30,33 +30,33 @@ LOG = logging.getLogger(__name__)
 
 
 def get_api(user, interface, cluster=None):
-  from jobbrowser.apis.bundle_api import BundleApi
   from jobbrowser.apis.data_eng_api import DataEngClusterApi, DataEngJobApi
-  from jobbrowser.apis.clusters import ClusterApi
   from jobbrowser.apis.data_warehouse import DataWarehouseClusterApi
-  from jobbrowser.apis.history import HistoryApi
   from jobbrowser.apis.livy_api import LivySessionsApi, LivyJobApi
-  from jobbrowser.apis.job_api import JobApi
-  from jobbrowser.apis.query_api import QueryApi
-  from jobbrowser.apis.schedule_api import ScheduleApi
-  from jobbrowser.apis.workflow_api import WorkflowApi
 
   if interface == 'jobs':
+    from jobbrowser.apis.job_api import JobApi
     return JobApi(user)
   elif interface == 'queries':
+    from jobbrowser.apis.query_api import QueryApi
     return QueryApi(user, cluster=cluster)
   elif interface == 'workflows':
+    from jobbrowser.apis.workflow_api import WorkflowApi
     return WorkflowApi(user)
   elif interface == 'schedules':
+    from jobbrowser.apis.schedule_api import ScheduleApi
     return ScheduleApi(user)
   elif interface == 'bundles':
+    from jobbrowser.apis.bundle_api import BundleApi
     return BundleApi(user)
   elif interface == 'celery-beat':
     from jobbrowser.apis.beat_api import BeatApi
     return BeatApi(user)
   elif interface == 'history':
+    from jobbrowser.apis.history import HistoryApi
     return HistoryApi(user)
   elif interface == 'engines':
+    from jobbrowser.apis.clusters import ClusterApi
     return ClusterApi(user)
   elif interface == 'dataeng-clusters':
     return DataEngClusterApi(user)
