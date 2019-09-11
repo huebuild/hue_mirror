@@ -36,6 +36,7 @@ class OrganizationManager(models.Manager):
 
 class Organization(models.Model):
   name = models.CharField(max_length=200, help_text=_t("The name of the organization"))
+  # TODO: domain
   is_active = models.BooleanField(default=True)
 
   objects = OrganizationManager()
@@ -107,12 +108,18 @@ def default_organization():
   default_organization, created = Organization.objects.get_or_create(name='default')
   return default_organization
 
+def get_organization(user):
+  # TODO: depends on the logged-in user and its organization
+  return default_organization()
+
+
 class OrganizationUser(AbstractUser):
     """User model."""
 
     username = None
-    email = models.EmailField(_t('email address'), unique=True)
-    token = models.CharField(_t('token'), max_length=128, default=None, null=True)
+    # TODO: accessor for login name only
+    email = models.EmailField(_t('Email address'), unique=True)
+    token = models.CharField(_t('Token'), max_length=128, default=None, null=True)
     customer_id = models.CharField(_t('Customer id'), max_length=128, default=None, null=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
 
@@ -136,6 +143,10 @@ class OrganizationUser(AbstractUser):
     @property
     def username(self):
       return self.email
+
+    @property
+    def username_short(self):
+      return self.email.split('@')[0]
 
     @username.setter
     def username(self, value):
