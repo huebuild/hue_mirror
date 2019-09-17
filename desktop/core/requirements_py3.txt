@@ -14,6 +14,7 @@ vine==1.2.0
 MarkupSafe==0.9.3
 backports.csv==1.0.5
 django-debug-toolbar==1.9.1
+jaeger-client==4.0.0
 thriftpy==0.3.9
 pyasn1==0.4.5
 et_xmlfile==1.0.1
@@ -25,6 +26,7 @@ odfpy==1.4.0
 Mako==1.0.7
 celery==4.2.1
 pyOpenSSL==17.5.0
+PySocks==1.7.0
 tablib==0.13.0
 ndg_httpsclient==0.4.0
 Django==1.11.20
@@ -58,6 +60,7 @@ pycparser==2.18
 django-webpack-loader==0.5.0
 django_celery_results==1.0.4
 django_opentracing==1.1.0
+django_prometheus==1.0.15
 pyasn1-modules==0.2.4
 django-openid-auth==0.14
 thrift==0.11.0
@@ -101,3 +104,4 @@ python-openid==2.2.5
 cryptography==2.1.4
 ply==3.9
 kazoo==2.0
+gcs-oauth2-boto-plugin==2.5
