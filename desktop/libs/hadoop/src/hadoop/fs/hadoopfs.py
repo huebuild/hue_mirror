@@ -36,7 +36,7 @@ import random
 import subprocess
 import sys
 
-from django.utils.encoding import smart_str, force_unicode
+from django.utils.encoding import smart_str
 from django.utils.translation import ugettext as _
 
 from desktop.lib import i18n
