@@ -32,7 +32,6 @@ import sys
 import django_opentracing
 
 from django.utils.translation import ugettext_lazy as _
-from guppy import hpy
 
 import desktop.redaction
 from desktop.lib.paths import get_desktop_root
@@ -603,13 +602,19 @@ if os.environ.get('REQUESTS_CA_BUNDLE') and os.environ.get('REQUESTS_CA_BUNDLE')
   raise Exception(_('SSL Certificate pointed by REQUESTS_CA_BUNDLE does not exist: %s') % os.environ['REQUESTS_CA_BUNDLE'])
 
 # Memory
-if desktop.conf.MEMORY_PROFILER.get():
+if sys.version_info[0] < 3 and desktop.conf.MEMORY_PROFILER.get():
+  from guppy import hpy
   MEMORY_PROFILER = hpy()
   MEMORY_PROFILER.setrelheap()
 
 # Instrumentation
 if desktop.conf.INSTRUMENTATION.get():
-  gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_OBJECTS)
+  if sys.version_info[0] < 3:
+    gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_OBJECTS)
+  else:
+    # https://stackoverflow.com/questions/37737753/watching-generation-lists-during-a-program-run
+    #gc.set_debug(gc.DEBUG_UNCOLLECTABLE | gc.DEBUG_STATS)
+    gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
 
 if not desktop.conf.DATABASE_LOGGING.get():
   def disable_database_logging():
