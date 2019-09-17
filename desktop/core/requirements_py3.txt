@@ -100,7 +100,6 @@ greenlet==0.4.15
 BabelDjango==0.2.2
 certifi==2018.1.18
 pycrypto==2.6.1
-python-openid==2.2.5
 cryptography==2.1.4
 ply==3.9
 kazoo==2.0
