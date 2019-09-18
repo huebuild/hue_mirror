@@ -24,7 +24,6 @@ import logging
 import mimetypes
 import operator
 import os
-import parquet
 import posixpath
 import re
 import stat as stat_module
@@ -50,8 +49,8 @@ from django.utils.html import escape
 from django.utils.translation import ugettext as _
 
 from aws.s3.s3fs import S3FileSystemException, S3ListAllBucketsException
-from avro import datafile, io
 from desktop import appmanager
+from desktop.auth.backend import is_admin
 from desktop.lib import i18n
 from desktop.lib.conf import coerce_bool
 from desktop.lib.django_util import render, format_preserving_redirect
@@ -75,20 +74,21 @@ from filebrowser.lib.archives import archive_factory
 from filebrowser.lib.rwx import filetype, rwx
 from filebrowser.lib import xxd
 from filebrowser.forms import RenameForm, UploadFileForm, UploadArchiveForm, MkDirForm, EditorForm, TouchForm,\
-                              RenameFormSet, RmTreeFormSet, ChmodFormSet, ChownFormSet, CopyFormSet, RestoreFormSet,\
-                              TrashPurgeForm, SetReplicationFactorForm
-
-
-from desktop.auth.backend import is_admin
+    RenameFormSet, RmTreeFormSet, ChmodFormSet, ChownFormSet, CopyFormSet, RestoreFormSet,\
+    TrashPurgeForm, SetReplicationFactorForm
 
 if sys.version_info[0] > 2:
-  from io import string_io as string_io
+  import io
+  from io import StringIO as string_io
   from urllib.parse import quote as urllib_quote
   from urllib.parse import unquote as urllib_unquote
 else:
   from cStringIO import StringIO as string_io
   from urllib import quote as urllib_quote
   from urllib import unquote as urllib_unquote
+  import parquet
+  from avro import datafile, io
+
 
 DEFAULT_CHUNK_SIZE_BYTES = 1024 * 4 # 4KB
 MAX_CHUNK_SIZE_BYTES = 1024 * 1024 # 1MB
@@ -101,9 +101,11 @@ BYTES_PER_SENTENCE = 2
 # The maximum size the file editor will allow you to edit
 MAX_FILEEDITOR_SIZE = 256 * 1024
 
-INLINE_DISPLAY_MIMETYPE = re.compile('video/|image/|audio/|application/pdf|application/msword|application/excel|'
-                                     'application/vnd\.ms|'
-                                     'application/vnd\.openxmlformats')
+INLINE_DISPLAY_MIMETYPE = re.compile(
+    'video/|image/|audio/|application/pdf|application/msword|application/excel|'
+    'application/vnd\.ms|'
+    'application/vnd\.openxmlformats'
+)
 
 INLINE_DISPLAY_MIMETYPE_EXCEPTIONS = re.compile('image/svg\+xml')
 
@@ -1345,7 +1347,7 @@ def _upload_file(request):
           'result': _massage_stats(request, stat_absolute_path(filepath, request.fs.stats(filepath))),
           'next': request.GET.get("next")
         })
- 
+
         return response
     else:
         raise PopupException(_("Error in upload form: %s") % (form.errors,))
