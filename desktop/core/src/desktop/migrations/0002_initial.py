@@ -22,9 +22,9 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('app', models.CharField(db_index=True, help_text='App that this configuration belongs to.', max_length=32)),
-                ('properties', models.TextField(default=b'[]', help_text='JSON-formatted default properties values.')),
+                ('properties', models.TextField(default='[]', help_text='JSON-formatted default properties values.')),
                 ('is_default', models.BooleanField(db_index=True, default=False)),
-                ('groups', models.ManyToManyField(db_index=True, db_table=b'defaultconfiguration_groups', to='auth.Group')),
+                ('groups', models.ManyToManyField(db_index=True, db_table='defaultconfiguration_groups', to='auth.Group')),
             ],
             options={
                 'ordering': ['app', '-is_default', 'user'],
