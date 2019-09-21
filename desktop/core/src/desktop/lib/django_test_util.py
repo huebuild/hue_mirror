@@ -22,7 +22,7 @@ import json
 import django.test.client
 import nose.tools
 
-from useradmin.models import User, Group, default_organization
+from useradmin.models import User, Group, default_organization, orm_user_lookup
 
 
 class Client(django.test.client.Client):
@@ -55,7 +55,7 @@ def make_logged_in_client(username="test", password="test", is_superuser=True, r
     username = username + '@gethue.com'
 
   try:
-    lookup = {'email' if ENABLE_ORGANIZATIONS.get() else 'username': username}
+    lookup = {orm_user_lookup(): username}
     user = User.objects.get(**lookup)
     if recreate:
       user.delete()
