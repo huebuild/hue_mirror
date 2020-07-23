@@ -20,3 +20,4 @@ NICE_NAME = "Job Browser"
 REQUIRES_HADOOP = True
 ICON = "jobbrowser/art/icon_jobbrowser_48.png"
 MENU_INDEX = 30
+INSTALLED_APPS = ('jobbrowser')
