@@ -71,7 +71,7 @@
     "mustache": "4.1.0",
     "page": "1.8.6",
     "plotly.js-dist": "1.45.3",
-    "qs": "6.9.4",
+    "qs": "6.9.7",
     "regenerator-runtime": "^0.13.3",
     "removeNPMAbsolutePaths": "^1.0.4",
     "sanitize-html": "^2.1.2",
